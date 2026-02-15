@@ -10,7 +10,7 @@ import type {
   MaintenanceRequest,
   Message, InsertMessage,
   Notification, InsertNotification,
-} from '@shared/schema';
+} from '../shared/schema';
 
 export interface IStorage {
   // ===== USER OPERATIONS =====

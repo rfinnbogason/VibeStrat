@@ -31,7 +31,7 @@ import {
   insertNotificationSchema,
   insertDismissedNotificationSchema,
   insertPaymentReminderSchema,
-} from "@shared/schema";
+} from "../shared/schema";
 
 // Configure multer for file uploads (documents, images, audio)
 const upload = multer({
@@ -527,7 +527,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Strata registration route (public)
   app.post('/api/strata/register', async (req, res) => {
     try {
-      const { insertPendingStrataRegistrationSchema } = await import("@shared/schema");
+      const { insertPendingStrataRegistrationSchema } = await import("../shared/schema");
       const registrationData = insertPendingStrataRegistrationSchema.parse(req.body);
       
       const pendingRegistration = await storage.createPendingRegistration(registrationData);

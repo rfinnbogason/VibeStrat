@@ -72,7 +72,7 @@ import {
   type InsertReport,
   type PendingStrataRegistration,
   type InsertPendingStrataRegistration,
-} from "@shared/schema";
+} from "../shared/schema";
 import { db } from "./db";
 import { eq, and, desc, count, sql, or, lt, ne, isNull, inArray } from "drizzle-orm";
 

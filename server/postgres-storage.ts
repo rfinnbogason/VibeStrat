@@ -1,6 +1,6 @@
 import { eq, and, desc, asc, inArray, ilike, or, sql, count } from 'drizzle-orm';
 import { db } from './db';
-import * as schema from '@shared/schema';
+import * as schema from '../shared/schema';
 import { sendNotificationEmail, type NotificationEmailData } from './email-service.js';
 import type { IStorage } from './storage-interface';
 import type {
@@ -14,7 +14,7 @@ import type {
   MaintenanceRequest,
   Message, InsertMessage,
   Notification, InsertNotification,
-} from '@shared/schema';
+} from '../shared/schema';
 
 export class PostgresStorage implements IStorage {
 
