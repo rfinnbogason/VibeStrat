@@ -1,0 +1,31 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Building -->
+  <path d="M60 40 L60 180 L140 180 L140 40 Z" fill="#2C5F6F"/>
+  
+  <!-- Windows -->
+  <rect x="70" y="55" width="15" height="15" fill="white"/>
+  <rect x="85" y="55" width="15" height="15" fill="white"/>
+  <rect x="105" y="55" width="15" height="15" fill="white"/>
+  <rect x="120" y="55" width="15" height="15" fill="white"/>
+  
+  <rect x="70" y="75" width="15" height="15" fill="white"/>
+  <rect x="85" y="75" width="15" height="15" fill="white"/>
+  <rect x="105" y="75" width="15" height="15" fill="white"/>
+  <rect x="120" y="75" width="15" height="15" fill="white"/>
+  
+  <rect x="70" y="95" width="15" height="15" fill="white"/>
+  <rect x="85" y="95" width="15" height="15" fill="white"/>
+  <rect x="105" y="95" width="15" height="15" fill="white"/>
+  <rect x="120" y="95" width="15" height="15" fill="white"/>
+  
+  <rect x="70" y="115" width="15" height="15" fill="white"/>
+  <rect x="85" y="115" width="15" height="15" fill="white"/>
+  <rect x="105" y="115" width="15" height="15" fill="white"/>
+  <rect x="120" y="115" width="15" height="15" fill="white"/>
+  
+  <!-- Door -->
+  <rect x="90" y="155" width="20" height="25" fill="white"/>
+  
+  <!-- Green checkmark -->
+  <path d="M130 120 L145 135 L175 105" stroke="#4ADE80" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

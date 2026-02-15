@@ -1,0 +1,31 @@
+{
+  "strata": {
+    "id": "b13712fb-8c41-4d4e-b5b4-a8f196b09716",
+    "name": "The Gables",
+    "address": "123 Main Street",
+    "city": "Vancouver",
+    "province": "BC",
+    "postalCode": "V6B 1A1",
+    "country": "Canada",
+    "totalUnits": 85,
+    "contactEmail": "admin@thegables.ca",
+    "contactPhone": "604-555-0123",
+    "description": "Premium townhome complex with excellent amenities",
+    "feeStructure": {
+      "standard": 425.00,
+      "premium": 485.00,
+      "penthouse": 625.00
+    },
+    "subscriptionStatus": "active",
+    "subscriptionTier": "standard",
+    "monthlyRate": 79.95,
+    "isFreeForever": true
+  },
+  "userStrataAccess": {
+    "id": "0f28b495-5c33-4580-b84a-94599ee60436",
+    "userId": "1751845688364-8fhp96bpk",
+    "strataId": "b13712fb-8c41-4d4e-b5b4-a8f196b09716",
+    "role": "chairperson",
+    "canPostAnnouncements": true
+  }
+}
