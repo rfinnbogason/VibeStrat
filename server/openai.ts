@@ -4,7 +4,14 @@ import * as fs from "fs";
 import * as path from "path";
 import { exec } from "child_process";
 import { promisify } from "util";
-import { fromPath } from "pdf2pic";
+// Lazy import pdf2pic - it depends on system libraries not available on Vercel
+let fromPath: any = null;
+try {
+  const pdf2pic = await import("pdf2pic");
+  fromPath = pdf2pic.fromPath;
+} catch {
+  // pdf2pic not available in this environment
+}
 
 const execAsync = promisify(exec);
 
