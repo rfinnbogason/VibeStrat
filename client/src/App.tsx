@@ -11,6 +11,7 @@ import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import ChangePassword from "@/pages/change-password";
 import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import Dashboard from "@/pages/dashboard";
 import Financial from "@/pages/financial";
 import Quotes from "@/pages/quotes";
@@ -55,6 +56,7 @@ function Router() {
               <Route path="/signup" component={Signup} />
               <Route path="/change-password" component={ChangePassword} />
               <Route path="/forgot-password" component={ForgotPassword} />
+              <Route path="/reset-password" component={ResetPassword} />
               <Route path="/trial-expired" component={TrialExpired} />
               <Route path="/terms" component={Terms} />
               <Route path="/privacy-policy" component={PrivacyPolicy} />

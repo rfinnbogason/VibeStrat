@@ -3,8 +3,6 @@ import { Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,32 +34,26 @@ export default function ForgotPassword() {
     setIsSubmitting(true);
 
     try {
-      await sendPasswordResetEmail(auth, data.email, {
-        url: window.location.origin + '/login',
-        handleCodeInApp: false,
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: data.email }),
       });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to send reset email");
+      }
 
       setEmailSent(true);
       toast({
         title: "Password reset email sent",
-        description: "Please check your email for instructions to reset your password.",
+        description: "If an account exists with this email, you'll receive reset instructions.",
       });
     } catch (error: any) {
-      console.error("Password reset error:", error);
-
-      let errorMessage = "Failed to send password reset email. Please try again.";
-
-      if (error.code === 'auth/user-not-found') {
-        errorMessage = "No account found with this email address.";
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = "Please enter a valid email address.";
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = "Too many attempts. Please try again later.";
-      }
-
       toast({
         title: "Error",
-        description: errorMessage,
+        description: error.message || "Failed to send password reset email. Please try again.",
         variant: "destructive",
       });
     } finally {

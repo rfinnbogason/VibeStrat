@@ -3,8 +3,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useStrata } from "@/lib/strata-context";
 import { useQuery } from "@tanstack/react-query";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import type { Strata } from "@shared/schema";
 import {
@@ -66,14 +64,11 @@ export default function Sidebar() {
   const [showNotificationsDialog, setShowNotificationsDialog] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  const { signOut } = useAuth();
+
   const handleSignOut = async () => {
     try {
-      await signOut(auth);
-      toast({
-        title: "Signed Out",
-        description: "You have been signed out successfully.",
-      });
-      // Redirect to landing page after sign out
+      await signOut();
       window.location.href = "/";
     } catch (error: any) {
       toast({

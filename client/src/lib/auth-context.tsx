@@ -1,104 +1,175 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { User, onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "./firebase";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { pushNotificationService } from "./push-notifications";
 
+interface AuthUser {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  role: string;
+  profileImageUrl?: string;
+  isActive?: boolean;
+  mustChangePassword?: boolean;
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<{ mustChangePassword?: boolean }>;
+  signup: (data: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string;
+  }) => Promise<{ token: string; user: AuthUser }>;
   signOut: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  // On mount, validate stored token
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-
-      // Get Firebase ID token when user is authenticated
-      if (user) {
-        try {
-          const idToken = await user.getIdToken();
-          setToken(idToken);
-        } catch (error) {
-          console.error('❌ Failed to get ID token:', error);
-          setToken(null);
-        }
-      } else {
-        setToken(null);
-      }
-
+    const storedToken = localStorage.getItem("auth_token");
+    if (storedToken) {
+      fetch("/api/auth/me", {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      })
+        .then(async (res) => {
+          if (res.ok) {
+            const userData = await res.json();
+            setUser(userData);
+            setToken(storedToken);
+            try {
+              await pushNotificationService.initialize();
+            } catch (e) {
+              // push notifications optional
+            }
+          } else {
+            localStorage.removeItem("auth_token");
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem("auth_token");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
       setLoading(false);
-
-      // Initialize push notifications when user logs in
-      if (user) {
-        // ✅ SECURITY: Removed console logging
-        try {
-          await pushNotificationService.initialize();
-        } catch (error) {
-          console.error('❌ Failed to initialize push notifications:', error);
-        }
-      } else {
-        // Clear FCM token when user logs out
-        // ✅ SECURITY: Removed console logging
-        try {
-          await pushNotificationService.clearToken();
-        } catch (error) {
-          console.error('❌ Failed to clear push notification token:', error);
-        }
-      }
-    });
-
-    return () => unsubscribe();
+    }
   }, []);
 
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      toast({
-        title: "Signed Out",
-        description: "You have been successfully signed out.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to sign out.",
-        variant: "destructive",
-      });
+  const login = useCallback(async (email: string, password: string) => {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw data;
     }
-  };
+
+    if (data.mustChangePassword) {
+      localStorage.setItem("auth_token", data.token);
+      setToken(data.token);
+      setUser(data.user);
+      return { mustChangePassword: true };
+    }
+
+    localStorage.setItem("auth_token", data.token);
+    setToken(data.token);
+    setUser(data.user);
+
+    try {
+      await pushNotificationService.initialize();
+    } catch (e) {
+      // push notifications optional
+    }
+
+    return {};
+  }, []);
+
+  const signup = useCallback(
+    async (data: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+      phoneNumber?: string;
+    }) => {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw result;
+      }
+
+      localStorage.setItem("auth_token", result.token);
+      setToken(result.token);
+      setUser(result.user);
+
+      return result;
+    },
+    []
+  );
+
+  const handleSignOut = useCallback(async () => {
+    localStorage.removeItem("auth_token");
+    setToken(null);
+    setUser(null);
+    try {
+      await pushNotificationService.clearToken();
+    } catch (e) {
+      // ignore
+    }
+    toast({
+      title: "Signed Out",
+      description: "You have been successfully signed out.",
+    });
+  }, [toast]);
 
   const value = {
     user,
     token,
     isLoading: loading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && !!token,
+    login,
+    signup,
     signOut: handleSignOut,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useFirebaseAuth() {
+export function useAuthContext() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useFirebaseAuth must be used within an AuthProvider");
+    throw new Error("useAuthContext must be used within an AuthProvider");
   }
   return context;
 }
 
 // Protected route wrapper
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useFirebaseAuth();
+  const { user, isLoading } = useAuthContext();
 
   if (isLoading) {
     return (
@@ -109,7 +180,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    // Redirect to login page
     window.location.href = "/login";
     return null;
   }

@@ -16,6 +16,7 @@ export interface IStorage {
   // ===== USER OPERATIONS =====
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByResetToken(hashedToken: string): Promise<User | undefined>;
   createUser(userData: InsertUser): Promise<User>;
   updateUser(id: string, userData: Partial<InsertUser>): Promise<User>;
   deleteUser(id: string): Promise<void>;

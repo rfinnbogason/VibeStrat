@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAuth } from "firebase/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, CreditCard, Calendar, DollarSign, Trash2 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
@@ -41,8 +41,7 @@ interface BillingHistoryItem {
 function AddPaymentMethodForm({ onSuccess }: { onSuccess: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
-  const auth = getAuth();
-  const user = auth.currentUser;
+  const { user } = useAuth();
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState(false);
 
@@ -57,8 +56,7 @@ function AddPaymentMethodForm({ onSuccess }: { onSuccess: () => void }) {
     setError("");
 
     try {
-      // Get Firebase ID token
-      const token = await user.getIdToken();
+      const token = localStorage.getItem("auth_token");
 
       // Create SetupIntent
       const setupResponse = await fetch("/api/stripe/create-setup-intent", {
@@ -67,7 +65,7 @@ function AddPaymentMethodForm({ onSuccess }: { onSuccess: () => void }) {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({ userId: user.uid }),
+        body: JSON.stringify({ userId: user.id }),
       });
 
       const { clientSecret } = await setupResponse.json();
@@ -98,7 +96,7 @@ function AddPaymentMethodForm({ onSuccess }: { onSuccess: () => void }) {
           "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
-          userId: user.uid,
+          userId: user.id,
           paymentMethodId: setupIntent.payment_method,
         }),
       });
@@ -151,9 +149,8 @@ function AddPaymentMethodForm({ onSuccess }: { onSuccess: () => void }) {
 }
 
 export default function BillingPage() {
-  const auth = getAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const user = auth.currentUser;
 
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -172,12 +169,12 @@ export default function BillingPage() {
 
   // Fetch Payment Methods
   const { data: paymentMethodsData, isLoading: loadingMethods, refetch: refetchPaymentMethods } = useQuery({
-    queryKey: ["paymentMethods", user?.uid],
+    queryKey: ["paymentMethods", user?.id],
     queryFn: async () => {
       if (!user) return { paymentMethods: [] };
 
-      const token = await user.getIdToken();
-      const response = await fetch(`/api/stripe/payment-methods/${user.uid}`, {
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`/api/stripe/payment-methods/${user.id}`, {
         headers: {
           "Authorization": `Bearer ${token}`,
         },
@@ -197,7 +194,7 @@ export default function BillingPage() {
     mutationFn: async (paymentMethodId: string) => {
       if (!user) throw new Error("Not authenticated");
 
-      const token = await user.getIdToken();
+      const token = localStorage.getItem("auth_token");
       const response = await fetch("/api/stripe/payment-methods/set-default", {
         method: "POST",
         headers: {
@@ -205,7 +202,7 @@ export default function BillingPage() {
           "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
-          userId: user.uid,
+          userId: user.id,
           paymentMethodId,
         }),
       });
@@ -229,7 +226,7 @@ export default function BillingPage() {
     mutationFn: async (paymentMethodId: string) => {
       if (!user) throw new Error("Not authenticated");
 
-      const token = await user.getIdToken();
+      const token = localStorage.getItem("auth_token");
       const response = await fetch(`/api/stripe/payment-methods/${paymentMethodId}`, {
         method: "DELETE",
         headers: {

@@ -1,29 +1,13 @@
 import express, { Request, Response, RequestHandler } from 'express';
 import Stripe from 'stripe';
 import { stripe, STRIPE_CONFIG, getSubscriptionTier, getStripePriceId } from './stripe-config';
-import * as firebaseStorage from './firebase-db';
-import { Timestamp } from 'firebase-admin/firestore';
-import { adminAuth } from './firebase-admin';
+import { storage } from './storage-factory';
+import { authenticateJwt } from './jwt-auth';
 
 const router = express.Router();
 
-// Authentication middleware for Stripe routes
-const authenticateStripeRequest: RequestHandler = async (req: any, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Unauthorized - No token provided' });
-    }
-
-    const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await adminAuth.verifyIdToken(token);
-    req.user = decodedToken;
-    next();
-  } catch (error: any) {
-    console.error('Stripe route auth error:', error);
-    return res.status(401).json({ error: 'Unauthorized - Invalid token' });
-  }
-};
+// Use JWT authentication for Stripe routes
+const authenticateStripeRequest: RequestHandler = authenticateJwt as any;
 
 // ====================================
 // STRIPE CHECKOUT & SUBSCRIPTION APIs
@@ -46,7 +30,7 @@ router.post('/create-checkout-session', authenticateStripeRequest, async (req: R
     }
 
     // Get strata info
-    const strata = await firebaseStorage.getStrata(strataId);
+    const strata = await storage.getStrata(strataId);
     if (!strata) {
       return res.status(404).json({ error: 'Strata not found' });
     }
@@ -71,7 +55,7 @@ router.post('/create-checkout-session', authenticateStripeRequest, async (req: R
           quantity: 1,
         },
       ],
-      customer_email: strata.email || undefined,
+      customer_email: (strata as any).email || undefined,
       metadata: {
         strataId,
         userId,
@@ -98,7 +82,6 @@ router.post('/create-checkout-session', authenticateStripeRequest, async (req: R
 
 /**
  * Create Customer Portal Session
- * Allows customers to manage their subscription, payment methods, and billing history
  */
 router.post('/create-portal-session', authenticateStripeRequest, async (req: Request, res: Response) => {
   try {
@@ -126,7 +109,6 @@ router.post('/create-portal-session', authenticateStripeRequest, async (req: Req
 
 /**
  * Cancel Subscription
- * Cancels the subscription at the end of the current billing period
  */
 router.post('/cancel-subscription', authenticateStripeRequest, async (req: Request, res: Response) => {
   try {
@@ -140,17 +122,14 @@ router.post('/cancel-subscription', authenticateStripeRequest, async (req: Reque
       return res.status(400).json({ error: 'Subscription ID is required' });
     }
 
-    // Cancel subscription
     const subscription = await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: !cancelImmediately,
       ...(cancelImmediately && { cancel_at: Math.floor(Date.now() / 1000) }),
     });
 
-    // Update strata subscription status
     if (strataId) {
-      await firebaseStorage.updateStrata(strataId, {
-        'subscription.status': cancelImmediately ? 'cancelled' : 'active',
-        updatedAt: Timestamp.now(),
+      await storage.updateStrata(strataId, {
+        updatedAt: new Date(),
       });
     }
 
@@ -168,7 +147,6 @@ router.post('/cancel-subscription', authenticateStripeRequest, async (req: Reque
 
 /**
  * Reactivate Subscription
- * Reactivates a subscription that was scheduled for cancellation
  */
 router.post('/reactivate-subscription', authenticateStripeRequest, async (req: Request, res: Response) => {
   try {
@@ -182,16 +160,13 @@ router.post('/reactivate-subscription', authenticateStripeRequest, async (req: R
       return res.status(400).json({ error: 'Subscription ID is required' });
     }
 
-    // Reactivate subscription
     const subscription = await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: false,
     });
 
-    // Update strata subscription status
     if (strataId) {
-      await firebaseStorage.updateStrata(strataId, {
-        'subscription.status': 'active',
-        updatedAt: Timestamp.now(),
+      await storage.updateStrata(strataId, {
+        updatedAt: new Date(),
       });
     }
 
@@ -209,13 +184,14 @@ router.get('/subscription/:strataId', authenticateStripeRequest, async (req: Req
   try {
     const { strataId } = req.params;
 
-    const strata = await firebaseStorage.getStrata(strataId);
+    const strata = await storage.getStrata(strataId);
     if (!strata) {
       return res.status(404).json({ error: 'Strata not found' });
     }
 
-    // If no subscription exists, initialize a default "free" subscription
-    if (!strata.subscription) {
+    const strataAny = strata as any;
+
+    if (!strataAny.subscription) {
       const defaultSubscription = {
         status: 'free',
         tier: 'free',
@@ -223,26 +199,24 @@ router.get('/subscription/:strataId', authenticateStripeRequest, async (req: Req
         isFreeForever: false,
       };
 
-      // Save the default subscription to the strata document
-      await firebaseStorage.updateStrata(strataId, {
+      await storage.updateStrata(strataId, {
         subscription: defaultSubscription,
-        updatedAt: Timestamp.now(),
+        updatedAt: new Date(),
       });
 
       return res.json({ subscription: defaultSubscription });
     }
 
-    // Get subscription details from Firestore or provide defaults
     const subscriptionData = {
-      status: strata.subscription?.status || 'free',
-      tier: strata.subscription?.tier || 'free',
-      monthlyRate: strata.subscription?.monthlyRate || 0,
-      trialStartDate: strata.subscription?.trialStartDate || null,
-      trialEndDate: strata.subscription?.trialEndDate || null,
-      nextPaymentDate: strata.subscription?.nextPaymentDate || null,
-      isFreeForever: strata.subscription?.isFreeForever !== undefined ? strata.subscription.isFreeForever : false,
-      stripeCustomerId: strata.subscription?.stripeCustomerId || null,
-      stripeSubscriptionId: strata.subscription?.stripeSubscriptionId || null,
+      status: strataAny.subscription?.status || 'free',
+      tier: strataAny.subscription?.tier || 'free',
+      monthlyRate: strataAny.subscription?.monthlyRate || 0,
+      trialStartDate: strataAny.subscription?.trialStartDate || null,
+      trialEndDate: strataAny.subscription?.trialEndDate || null,
+      nextPaymentDate: strataAny.subscription?.nextPaymentDate || null,
+      isFreeForever: strataAny.subscription?.isFreeForever !== undefined ? strataAny.subscription.isFreeForever : false,
+      stripeCustomerId: strataAny.subscription?.stripeCustomerId || null,
+      stripeSubscriptionId: strataAny.subscription?.stripeSubscriptionId || null,
     };
 
     res.json({ subscription: subscriptionData });
@@ -282,7 +256,6 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req: R
 
     console.log('Received Stripe webhook event:', event.type);
 
-    // Handle the event
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
@@ -352,18 +325,19 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   console.log(`Checkout completed for strata ${strataId}`);
 
-  // Update strata with subscription details
   const trialEndDate = new Date();
   trialEndDate.setDate(trialEndDate.getDate() + STRIPE_CONFIG.TRIAL_DAYS);
 
-  await firebaseStorage.updateStrata(strataId, {
-    'subscription.status': 'trial',
-    'subscription.tier': tier,
-    'subscription.trialStartDate': Timestamp.now(),
-    'subscription.trialEndDate': Timestamp.fromDate(trialEndDate),
-    'subscription.stripeCustomerId': session.customer as string,
-    'subscription.stripeSubscriptionId': session.subscription as string,
-    updatedAt: Timestamp.now(),
+  await storage.updateStrata(strataId, {
+    subscription: {
+      status: 'trial',
+      tier,
+      trialStartDate: new Date(),
+      trialEndDate,
+      stripeCustomerId: session.customer as string,
+      stripeSubscriptionId: session.subscription as string,
+    },
+    updatedAt: new Date(),
   });
 }
 
@@ -391,7 +365,6 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
   });
 
-  // Map Stripe status to our status
   let status: 'trial' | 'active' | 'cancelled' | 'expired' | 'free' = 'active';
 
   if (subscription.status === 'trialing') {
@@ -405,17 +378,17 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   }
 
   const updates: any = {
-    'subscription.status': status,
-    updatedAt: Timestamp.now(),
+    updatedAt: new Date(),
   };
 
   if (subscription.current_period_end) {
-    updates['subscription.nextPaymentDate'] = Timestamp.fromDate(
-      new Date(subscription.current_period_end * 1000)
-    );
+    updates.subscription = {
+      status,
+      nextPaymentDate: new Date(subscription.current_period_end * 1000),
+    };
   }
 
-  await firebaseStorage.updateStrata(strataId, updates);
+  await storage.updateStrata(strataId, updates);
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
@@ -428,10 +401,8 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
   console.log(`Subscription deleted for strata ${strataId}`);
 
-  await firebaseStorage.updateStrata(strataId, {
-    'subscription.status': 'cancelled',
-    'subscription.subscriptionEndDate': Timestamp.now(),
-    updatedAt: Timestamp.now(),
+  await storage.updateStrata(strataId, {
+    updatedAt: new Date(),
   });
 }
 
@@ -444,9 +415,6 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
   }
 
   console.log(`Trial will end soon for strata ${strataId}`);
-
-  // TODO: Send notification to strata admins about trial ending
-  // Can implement email notification here
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
@@ -464,10 +432,8 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 
   console.log(`Payment succeeded for strata ${strataId}`);
 
-  await firebaseStorage.updateStrata(strataId, {
-    'subscription.lastPaymentDate': Timestamp.now(),
-    'subscription.status': 'active',
-    updatedAt: Timestamp.now(),
+  await storage.updateStrata(strataId, {
+    updatedAt: new Date(),
   });
 }
 
@@ -485,9 +451,6 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   }
 
   console.log(`Payment failed for strata ${strataId}`);
-
-  // TODO: Send notification to strata admins about payment failure
-  // Can implement email notification here
 }
 
 // ====================================
@@ -505,31 +468,22 @@ router.get('/payment-methods/:userId', authenticateStripeRequest, async (req: Re
 
     const { userId } = req.params;
 
-    // Get user data from Firebase to find Stripe customer ID
-    const userSnapshot = await firebaseStorage.db
-      .collection('users')
-      .where('id', '==', userId)
-      .limit(1)
-      .get();
-
-    if (userSnapshot.empty) {
+    const user = await storage.getUser(userId);
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const userData = userSnapshot.docs[0].data();
-    const stripeCustomerId = userData.stripeCustomerId;
+    const stripeCustomerId = (user as any).stripeCustomerId;
 
     if (!stripeCustomerId) {
       return res.json({ paymentMethods: [] });
     }
 
-    // List all payment methods for the customer
     const paymentMethods = await stripe.paymentMethods.list({
       customer: stripeCustomerId,
       type: 'card',
     });
 
-    // Get the default payment method from customer
     const customer = await stripe.customers.retrieve(stripeCustomerId);
     const defaultPaymentMethodId = (customer as Stripe.Customer).invoice_settings?.default_payment_method as string;
 
@@ -563,50 +517,37 @@ router.post('/payment-methods', authenticateStripeRequest, async (req: Request, 
       return res.status(400).json({ error: 'userId and paymentMethodId are required' });
     }
 
-    // Get or create Stripe customer
-    const userSnapshot = await firebaseStorage.db
-      .collection('users')
-      .where('id', '==', userId)
-      .limit(1)
-      .get();
-
-    if (userSnapshot.empty) {
+    const user = await storage.getUser(userId);
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const userDoc = userSnapshot.docs[0];
-    const userData = userDoc.data();
-    let stripeCustomerId = userData.stripeCustomerId;
+    let stripeCustomerId = (user as any).stripeCustomerId;
 
-    // Create Stripe customer if doesn't exist
     if (!stripeCustomerId) {
       const customer = await stripe.customers.create({
-        email: userData.email,
+        email: user.email,
         metadata: {
           userId: userId,
         },
       });
       stripeCustomerId = customer.id;
 
-      // Update user document with Stripe customer ID
-      await firebaseStorage.db.collection('users').doc(userDoc.id).update({
+      await storage.updateUser(userId, {
         stripeCustomerId: stripeCustomerId,
-        updatedAt: Timestamp.now(),
-      });
+        updatedAt: new Date(),
+      } as any);
     }
 
-    // Attach payment method to customer
     await stripe.paymentMethods.attach(paymentMethodId, {
       customer: stripeCustomerId,
     });
 
-    // Get existing payment methods to check if this should be default
     const existingMethods = await stripe.paymentMethods.list({
       customer: stripeCustomerId,
       type: 'card',
     });
 
-    // Set as default if it's the first payment method
     if (existingMethods.data.length === 1) {
       await stripe.customers.update(stripeCustomerId, {
         invoice_settings: {
@@ -640,25 +581,17 @@ router.post('/payment-methods/set-default', authenticateStripeRequest, async (re
       return res.status(400).json({ error: 'userId and paymentMethodId are required' });
     }
 
-    // Get user's Stripe customer ID
-    const userSnapshot = await firebaseStorage.db
-      .collection('users')
-      .where('id', '==', userId)
-      .limit(1)
-      .get();
-
-    if (userSnapshot.empty) {
+    const user = await storage.getUser(userId);
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const userData = userSnapshot.docs[0].data();
-    const stripeCustomerId = userData.stripeCustomerId;
+    const stripeCustomerId = (user as any).stripeCustomerId;
 
     if (!stripeCustomerId) {
       return res.status(400).json({ error: 'No Stripe customer found' });
     }
 
-    // Set as default payment method
     await stripe.customers.update(stripeCustomerId, {
       invoice_settings: {
         default_payment_method: paymentMethodId,
@@ -683,7 +616,6 @@ router.delete('/payment-methods/:paymentMethodId', authenticateStripeRequest, as
 
     const { paymentMethodId } = req.params;
 
-    // Detach payment method from customer
     await stripe.paymentMethods.detach(paymentMethodId);
 
     res.json({ message: 'Payment method deleted successfully' });
@@ -695,7 +627,6 @@ router.delete('/payment-methods/:paymentMethodId', authenticateStripeRequest, as
 
 /**
  * Create Setup Intent for adding payment method
- * This is used by Stripe Elements to securely collect card details
  */
 router.post('/create-setup-intent', authenticateStripeRequest, async (req: Request, res: Response) => {
   try {
@@ -709,39 +640,28 @@ router.post('/create-setup-intent', authenticateStripeRequest, async (req: Reque
       return res.status(400).json({ error: 'userId is required' });
     }
 
-    // Get or create Stripe customer
-    const userSnapshot = await firebaseStorage.db
-      .collection('users')
-      .where('id', '==', userId)
-      .limit(1)
-      .get();
-
-    if (userSnapshot.empty) {
+    const user = await storage.getUser(userId);
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const userDoc = userSnapshot.docs[0];
-    const userData = userDoc.data();
-    let stripeCustomerId = userData.stripeCustomerId;
+    let stripeCustomerId = (user as any).stripeCustomerId;
 
-    // Create Stripe customer if doesn't exist
     if (!stripeCustomerId) {
       const customer = await stripe.customers.create({
-        email: userData.email,
+        email: user.email,
         metadata: {
           userId: userId,
         },
       });
       stripeCustomerId = customer.id;
 
-      // Update user document with Stripe customer ID
-      await firebaseStorage.db.collection('users').doc(userDoc.id).update({
+      await storage.updateUser(userId, {
         stripeCustomerId: stripeCustomerId,
-        updatedAt: Timestamp.now(),
-      });
+        updatedAt: new Date(),
+      } as any);
     }
 
-    // Create SetupIntent
     const setupIntent = await stripe.setupIntents.create({
       customer: stripeCustomerId,
       payment_method_types: ['card'],

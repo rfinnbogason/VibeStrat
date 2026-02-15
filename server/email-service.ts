@@ -1,6 +1,4 @@
-import { getAuth } from 'firebase-admin/auth';
-import { firebaseStorage } from './firebase-storage.js';
-import { db } from './firebase-db.js';
+import { storage } from './storage-factory.js';
 import type { Meeting, User, InsertNotification } from '../shared/schema.js';
 import sgMail from '@sendgrid/mail';
 
@@ -13,112 +11,46 @@ if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
   console.log('✅ SendGrid initialized for email notifications');
 } else {
-  console.log('⚠️ SendGrid API key not configured - emails will be queued in Firestore only');
+  console.log('⚠️ SendGrid API key not configured - emails will be logged only');
 }
 
-// Firebase email interface
-interface FirebaseEmail {
+interface EmailData {
   to: string;
   subject: string;
   html: string;
   text: string;
 }
 
-// Send email using SendGrid or fallback to Firebase mail collection
-async function sendFirebaseEmail(emailData: FirebaseEmail): Promise<void> {
+// Send email using SendGrid
+async function sendEmail(emailData: EmailData): Promise<void> {
   try {
     console.log(`📧 Sending email to: ${emailData.to}`);
     console.log(`📧 Subject: ${emailData.subject}`);
 
-    // Try SendGrid first if configured
     if (SENDGRID_API_KEY) {
-      try {
-        const msg = {
-          to: emailData.to,
-          from: {
-            email: SENDGRID_FROM_EMAIL,
-            name: SENDGRID_FROM_NAME
-          },
-          subject: emailData.subject,
-          html: emailData.html,
-          text: emailData.text,
-          trackingSettings: {
-            clickTracking: { enable: true },
-            openTracking: { enable: true }
-          }
-        };
-
-        await sgMail.send(msg);
-        console.log(`✅ SendGrid email sent successfully to: ${emailData.to}`);
-
-        // Log successful email
-        await db.collection('email_logs').add({
-          to: emailData.to,
-          subject: emailData.subject,
-          sentAt: new Date().toISOString(),
-          status: 'sent_sendgrid',
-          source: 'vibestrat'
-        });
-
-        return;
-      } catch (sendgridError: any) {
-        console.error('❌ SendGrid failed, falling back to Firebase:', sendgridError.message);
-        if (sendgridError.response) {
-          console.error('SendGrid error details:', sendgridError.response.body);
-        }
-        // Fall through to Firebase fallback
-      }
-    }
-
-    // Fallback: Use Firebase Extensions pattern - adding to 'mail' collection triggers email sending
-    const emailDoc = await db.collection('mail').add({
-      to: emailData.to,
-      message: {
+      const msg = {
+        to: emailData.to,
+        from: {
+          email: SENDGRID_FROM_EMAIL,
+          name: SENDGRID_FROM_NAME
+        },
         subject: emailData.subject,
         html: emailData.html,
-        text: emailData.text
-      },
-      delivery: {
-        startTime: new Date().toISOString(),
-        state: 'PENDING',
-        attempts: 0
-      },
-      vibestrat: {
-        source: 'vibestrat-system',
-        timestamp: new Date().toISOString()
-      }
-    });
+        text: emailData.text,
+        trackingSettings: {
+          clickTracking: { enable: true },
+          openTracking: { enable: true }
+        }
+      };
 
-    console.log(`📧 Email queued in Firebase with ID: ${emailDoc.id}`);
-
-    // Log successful email submission
-    await db.collection('email_logs').add({
-      to: emailData.to,
-      subject: emailData.subject,
-      firebaseDocId: emailDoc.id,
-      sentAt: new Date().toISOString(),
-      status: 'queued_firebase',
-      source: 'vibestrat'
-    });
-
-    console.log(`✅ Email successfully queued for: ${emailData.to}`);
-  } catch (error: any) {
-    console.error('❌ Failed to send email:', error);
-
-    // Log the failure
-    try {
-      await db.collection('email_logs').add({
-        to: emailData.to,
-        subject: emailData.subject,
-        sentAt: new Date().toISOString(),
-        status: 'failed',
-        error: error.message,
-        source: 'vibestrat'
-      });
-    } catch (logError) {
-      console.error('Failed to log email error:', logError);
+      await sgMail.send(msg);
+      console.log(`✅ SendGrid email sent successfully to: ${emailData.to}`);
+      return;
     }
 
+    console.log(`⚠️ No email provider configured - email to ${emailData.to} logged but not sent`);
+  } catch (error: any) {
+    console.error('❌ Failed to send email:', error);
     throw error;
   }
 }
@@ -465,12 +397,12 @@ export async function sendMeetingInviteEmails(emailData: MeetingInviteEmailData)
         }
       };
       
-      await firebaseStorage.createNotification(notificationData);
+      await storage.createNotification(notificationData);
       
       // Send actual email notification using Firebase's email capability
       // We'll use Firebase's built-in email service
       try {
-        await sendFirebaseEmail({
+        await sendEmail({
           to: invitee.email,
           subject,
           html: htmlBody,
@@ -587,19 +519,14 @@ export async function sendNotificationEmail(emailData: NotificationEmailData): P
     console.log(`📧 Notification type: ${emailData.notificationType}`);
 
     // Get user's notification settings
-    const userSnapshot = await db
-      .collection('users')
-      .where('id', '==', emailData.userId)
-      .limit(1)
-      .get();
+    const userData = await storage.getUser(emailData.userId);
 
-    if (userSnapshot.empty) {
+    if (!userData) {
       console.log(`❌ User not found: ${emailData.userId}`);
       return false;
     }
 
-    const userData = userSnapshot.docs[0].data();
-    const notificationSettings = userData.notificationSettings || {};
+    const notificationSettings = (userData as any).notificationSettings || {};
 
     // Check if user has email notifications enabled
     if (notificationSettings.emailNotifications === false) {
@@ -644,7 +571,7 @@ export async function sendNotificationEmail(emailData: NotificationEmailData): P
     const textBody = generateNotificationEmailText(emailData);
 
     // Send email using Firebase
-    await sendFirebaseEmail({
+    await sendEmail({
       to: emailData.userEmail,
       subject,
       html: htmlBody,

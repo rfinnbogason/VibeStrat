@@ -35,6 +35,8 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   passwordHash: varchar("password_hash"),
+  passwordResetToken: varchar("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires"),
   isActive: boolean("is_active").default(true),
   lastLoginAt: timestamp("last_login_at"),
   role: varchar("role").notNull().default("resident"),
@@ -1121,6 +1123,7 @@ export const insertMeetingInviteeSchema = createInsertSchema(meetingInvitees).om
 
 // Types
 export type UpsertUser = typeof users.$inferInsert;
+export type InsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type UserWithAssignments = User & {
   strataAssignments: UserStrataAccess[];

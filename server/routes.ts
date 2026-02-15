@@ -1,10 +1,9 @@
 import type { Express, RequestHandler } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage-factory";
-import { auth } from "./firebase-db";
-import { authenticateFirebase } from "./firebase-auth";
-import { uploadFileToStorage, deleteFileFromStorage } from "./firebase-storage-bucket";
-import { Timestamp } from "firebase-admin/firestore";
+import { authenticateJwt } from "./jwt-auth";
+import { registerAuthRoutes } from "./auth-routes";
+import { uploadFile as uploadToBlob, deleteFile as deleteFromBlob } from "./vercel-blob-storage";
 import { pushNotificationService } from "./push-notification-service";
 import bcrypt from "bcryptjs";
 import multer from "multer";
@@ -94,146 +93,10 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Firebase-only authentication middleware with PROPER token verification
-const isAuthenticatedUnified: RequestHandler = async (req: any, res, next) => {
-  try {
-    // Check for Firebase token
-    const authHeader = req.headers.authorization;
+// JWT authentication middleware (replaces Firebase token verification)
+const isAuthenticatedUnified: RequestHandler = authenticateJwt as RequestHandler;
 
-    // Log download endpoint authentication attempts
-    if (req.path.includes('/download')) {
-      console.log(`🔐 Auth check for download: ${req.path}`);
-      console.log(`📝 Auth header present: ${!!authHeader}`);
-    }
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      if (req.path.includes('/download')) {
-        console.log(`❌ No auth header or invalid format for download`);
-      }
-      return res.status(401).json({ message: "No authentication token provided" });
-    }
-
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-
-    try {
-      // ✅ SECURITY FIX: Use Firebase Admin SDK to verify token signature
-      const { auth } = await import('./firebase-db');
-      const decodedToken = await auth.verifyIdToken(token);
-      const email = decodedToken.email;
-      const uid = decodedToken.uid;
-
-      if (!email) {
-        if (req.path.includes('/download')) {
-          console.log(`❌ Token has no email for download`);
-        }
-        return res.status(401).json({ message: "Invalid token: no email" });
-      }
-
-      if (req.path.includes('/download')) {
-        console.log(`✅ Token verified for download, email: ${email}`);
-      }
-
-      // Fetch user from Firestore (works for all users including master admin)
-      const user = await storage.getUserByEmail(email);
-
-      if (!user) {
-        // If user doesn't exist in Firestore but is master admin, they need to sign up first
-        if (email === MASTER_ADMIN_EMAIL) {
-          console.log('⚠️ Master admin email detected but no user profile found');
-          return res.status(401).json({ message: "Please complete signup to create your profile" });
-        }
-        return res.status(401).json({ message: "User not found" });
-      }
-
-      // Set user data
-      req.authenticatedUser = user;
-      req.firebaseUser = {
-        uid: uid,
-        email: email
-      };
-      req.user = user; // For compatibility
-
-      return next();
-    } catch (tokenError: any) {
-      console.error("Token verification failed:", tokenError.message);
-      return res.status(401).json({ message: "Invalid or expired token" });
-    }
-  } catch (error) {
-    console.error("Error checking Firebase authentication:", error);
-    return res.status(500).json({ message: "Firebase authentication error" });
-  }
-};
-
-// Firebase migration endpoints
-function registerFirebaseMigrationRoutes(app: Express) {
-  
-  // Check if user exists in PostgreSQL (for login validation)
-  app.post("/api/migration/check-user", async (req, res) => {
-    try {
-      const { email } = req.body;
-      
-      if (!email) {
-        return res.status(400).json({ error: 'Email is required' });
-      }
-
-      const user = await storage.getUserByEmail(email);
-      
-      if (user) {
-        // Check if this user was created through Firebase registration
-        // Firebase users have different characteristics than PostgreSQL legacy users
-        const isFirebaseNative = user.firebaseUid || user.createdAt > new Date('2025-07-01'); // Assuming Firebase migration started July 1st
-        
-        res.json({
-          exists: true,
-          needsMigration: !isFirebaseNative, // Only migrate legacy PostgreSQL users
-          user: {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName || '',
-            lastName: user.lastName || '',
-            role: user.role,
-            isActive: user.isActive !== false
-          },
-          temporaryPassword: isFirebaseNative ? null : "VibeStrat2025!" // No temp password for Firebase users
-        });
-      } else {
-        res.json({ exists: false });
-      }
-    } catch (error) {
-      console.error('Error checking user:', error);
-      res.status(500).json({ error: 'Failed to check user' });
-    }
-  });
-
-  // Get all PostgreSQL users for migration reference
-  app.get("/api/migration/postgresql-users", async (req, res) => {
-    try {
-      const users = await storage.getAllUsers();
-      const userList = users.map(user => ({
-        id: user.id,
-        email: user.email || '',
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        role: user.role,
-        isActive: user.isActive !== false
-      }));
-      
-      res.json({
-        totalUsers: userList.length,
-        users: userList,
-        temporaryPassword: "VibeStrat2025!",
-        instructions: [
-          "All existing users can log in with their email and the temporary password: VibeStrat2025!",
-          "Users should change their password after first login",
-          "Admin users retain their existing roles and permissions"
-        ]
-      });
-    } catch (error) {
-      console.error('Error fetching PostgreSQL users:', error);
-      res.status(500).json({ error: 'Failed to fetch users' });
-    }
-  });
-}
+// Migration routes removed - Firebase migration no longer needed
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
@@ -283,12 +146,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      // Direct Firebase upload without all the complex validation
-      const fileName = `${Date.now()}_${req.file.originalname}`;
-      const folder = `documents/${req.params.strataId}`;
-      const fileUrl = await uploadFileToStorage(fileName, req.file.buffer, req.file.mimetype, folder);
-      
-      console.log('✅ File uploaded to Firebase Storage:', fileUrl);
+      const fileName = `documents/${req.params.strataId}/${Date.now()}_${req.file.originalname}`;
+      const fileUrl = await uploadToBlob(req.file.buffer, fileName, req.file.mimetype);
+
+      console.log('File uploaded:', fileUrl);
 
       // Create minimal document record
       const documentData = {
@@ -313,23 +174,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Emergency upload failed: " + error.message });
     }
   });
-  // Auth middleware
-  // Firebase-only authentication - no Replit Auth setup needed
+  // Register auth routes (login, signup, forgot-password, etc.)
+  registerAuthRoutes(app);
 
   // Admin check middleware
   const isAdmin: RequestHandler = async (req: any, res, next) => {
-    // Check Firebase user email
-    if (req.firebaseUser?.email === MASTER_ADMIN_EMAIL) {
-      return next();
-    }
-
-    // Check authenticated user email (for password-based auth)
-    if (req.authenticatedUser?.email === MASTER_ADMIN_EMAIL) {
+    if (req.user?.email === MASTER_ADMIN_EMAIL) {
       return next();
     }
 
     // Check authenticated user role (for master admin)
-    if (req.authenticatedUser?.role === 'master_admin') {
+    if (req.user?.role === 'master_admin') {
       return next();
     }
 
@@ -346,16 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Diagnostic endpoint to debug authentication issues
   app.get('/api/debug/auth-status', isAuthenticatedUnified, async (req: any, res) => {
     try {
-      const user = req.authenticatedUser;
-      const firebaseUser = req.firebaseUser;
-
-      console.log('🔍 DEBUG: Auth Status Check:', {
-        hasUser: !!user,
-        hasFirebaseUser: !!firebaseUser,
-        userEmail: user?.email,
-        userId: user?.id,
-        firebaseUid: firebaseUser?.uid
-      });
+      const user = req.user;
 
       // Check strata access for this user
       const userStrata = user ? await storage.getUserStrata(user.id) : [];
@@ -369,10 +215,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: user.id,
           email: user.email,
           role: user.role
-        } : null,
-        firebaseUser: firebaseUser ? {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email
         } : null,
         strataCount: userStrata.length,
         strata: userStrata.map(s => ({ id: s.id, name: s.name })),
@@ -480,7 +322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/user/fcm-token', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { token } = req.body;
-      const user = req.authenticatedUser;
+      const user = req.user;
 
       if (!token) {
         return res.status(400).json({ message: "FCM token is required" });
@@ -572,14 +414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Strata routes
   app.get('/api/strata', isAuthenticatedUnified, async (req: any, res) => {
     try {
-      const user = req.authenticatedUser;
-      const firebaseUser = req.firebaseUser;
-
-      console.log('🏢 ===== FETCHING STRATA =====');
-      console.log('📧 User Email:', user?.email);
-      console.log('🆔 User ID:', user?.id);
-      console.log('🔥 Firebase UID:', firebaseUser?.uid);
-      console.log('🔍 Is Authenticated:', !!user);
+      const user = req.user;
 
       if (!user) {
         console.error('❌ No authenticated user found!');
@@ -642,21 +477,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new strata
   app.post('/api/strata', isAuthenticatedUnified, async (req: any, res) => {
     try {
-      const user = req.authenticatedUser;
+      const user = req.user;
       console.log('🏗️ Creating new strata for user:', user.email);
 
       const strataData = req.body;
       console.log('📋 Strata data:', JSON.stringify(strataData, null, 2));
 
-      // ✅ CRITICAL: Initialize 30-day trial for new stratas
-      const trialStartDate = Timestamp.now();
+      // Initialize 30-day trial for new stratas
+      const trialStartDate = new Date();
       const trialEndDate = new Date();
-      trialEndDate.setDate(trialEndDate.getDate() + 30); // 30 days from now
-
-      console.log('🎟️ Setting up 30-day trial:', {
-        start: trialStartDate.toDate(),
-        end: trialEndDate
-      });
+      trialEndDate.setDate(trialEndDate.getDate() + 30);
 
       // Create strata document with trial subscription
       const newStrata = await storage.createStrata({
@@ -666,7 +496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tier: 'standard',
           monthlyRate: 0,
           trialStartDate: trialStartDate,
-          trialEndDate: Timestamp.fromDate(trialEndDate),
+          trialEndDate: trialEndDate,
           isFreeForever: false
         },
         createdAt: new Date(),
@@ -990,7 +820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/strata/:id/expenses', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.authenticatedUser.id;
+      const userId = req.user.id;
       const expenseData = insertExpenseSchema.parse({
         ...req.body,
         strataId: id,
@@ -1007,7 +837,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/expenses/:id', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.authenticatedUser.id;
+      const userId = req.user.id;
       const updateData = { ...req.body };
       
       // Debug logging
@@ -1057,7 +887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/strata/:id/quotes', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.authenticatedUser.id;
+      const userId = req.user.id;
       const { quoteDocument, ...quoteBodyData } = req.body;
       
       const quoteData = insertQuoteSchema.parse({
@@ -1105,7 +935,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/quotes/:id', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.authenticatedUser.id;
+      const userId = req.user.id;
       const { quoteDocument, ...updateBodyData } = req.body;
       const updateData = { ...updateBodyData };
       
@@ -1466,7 +1296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.warn('⚠️ Strata not found for meeting invitations');
           } else {
             // Get organizer information (current user)
-            const organizerEmail = req.firebaseUser?.email;
+            const organizerEmail = req.user?.email;
             let organizer = null;
             
             if (organizerEmail) {
@@ -1594,16 +1424,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const timestamp = Date.now();
       const fileName = `meeting_${meetingId}_${timestamp}.wav`;
       
-      // Upload audio file to Firebase Storage
-      console.log('📤 Uploading audio to Firebase Storage...');
-      const audioUrl = await uploadFileToStorage(
-        fileName,
+      // Upload audio file to Vercel Blob
+      const audioUrl = await uploadToBlob(
         req.file.buffer,
-        req.file.mimetype,
-        'audio-recordings'
+        `audio-recordings/${fileName}`,
+        req.file.mimetype
       );
-      
-      console.log('✅ Audio uploaded to Firebase Storage:', audioUrl);
       
       // Update meeting with audio URL first
       console.log('📝 Updating meeting with audio URL...');
@@ -1894,7 +1720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/strata/:id/announcements', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.authenticatedUser.id;
+      const userId = req.user.id;
       const announcementData = insertAnnouncementSchema.parse({
         ...req.body,
         strataId: id,
@@ -1990,7 +1816,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/announcements/:id', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.authenticatedUser.id;
+      const userId = req.user.id;
       
       // Get the announcement to check permissions
       const announcement = await storage.getAnnouncement(id);
@@ -2017,7 +1843,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/announcements/:id', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.authenticatedUser.id; // Fixed: use req.authenticatedUser instead of req.user
+      const userId = req.user.id; // Fixed: use req.user instead of req.user
 
       // Get the announcement to check permissions
       const announcement = await storage.getAnnouncement(id);
@@ -2058,15 +1884,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/strata/:id/user-role', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userEmail = req.firebaseUser?.email || req.authenticatedUser?.email || req.user?.email;
-      
-      console.log('🔍 User role check:', { 
-        strataId: id, 
-        userEmail,
-        firebaseUser: req.firebaseUser?.email,
-        authenticatedUser: req.authenticatedUser?.email,
-        pgUser: req.user?.email
-      });
+      const userEmail = req.user?.email || req.user?.email || req.user?.email;
       
       if (!userEmail) {
         return res.status(401).json({ message: "User not authenticated" });
@@ -2074,76 +1892,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Special case for master admin
       if (userEmail === 'rfinnbogason@gmail.com') {
-        console.log('✅ Master admin detected, returning master_admin role');
         return res.json({ role: 'master_admin' });
       }
 
-      // FIREBASE MIGRATION: Complete transition to Firebase as primary database
       let user;
       let userAccess;
-      
-      // First migrate user if they exist in PostgreSQL but not Firebase
-      try {
-        const pgUser = await storage.getUserByEmail(userEmail);
-        if (pgUser) {
-          // Check if user exists in Firebase
-          let firebaseUser;
-          try {
-            firebaseUser = await storage.getUserByEmail(userEmail);
-          } catch (err) {
-            console.log('🔄 User not in Firebase, migrating from PostgreSQL...');
-          }
-          
-          if (!firebaseUser) {
-            // Migrate user to Firebase
-            firebaseUser = await storage.createUser({
-              email: pgUser.email,
-              firstName: pgUser.firstName,
-              lastName: pgUser.lastName,
-              profileImageUrl: pgUser.profileImageUrl,
-              passwordHash: pgUser.passwordHash,
-              isActive: pgUser.isActive,
-              lastLoginAt: pgUser.lastLoginAt,
-              role: pgUser.role,
-              mustChangePassword: pgUser.mustChangePassword || false
-            });
-            console.log('✅ Migrated user to Firebase:', firebaseUser.email);
-          }
-          
-          // Migrate user strata access if not exists
-          try {
-            let firebaseAccess = await storage.getUserStrataAccess(firebaseUser.id, id);
-            if (!firebaseAccess) {
-              const pgAccess = await storage.getUserStrataAccess(pgUser.id, id);
-              if (pgAccess) {
-                firebaseAccess = await storage.createUserStrataAccess({
-                  userId: firebaseUser.id,
-                  strataId: pgAccess.strataId,
-                  role: pgAccess.role,
-                  canPostAnnouncements: pgAccess.canPostAnnouncements || false
-                });
-                console.log('✅ Migrated user access to Firebase:', firebaseAccess.role);
-              }
-            }
-            userAccess = firebaseAccess;
-          } catch (err) {
-            console.log('⚠️ Firebase access lookup failed, using PostgreSQL');
-            userAccess = await storage.getUserStrataAccess(pgUser.id, id);
-          }
-          
-          user = firebaseUser;
-        }
-      } catch (error) {
-        console.log('❌ Migration attempt failed:', error.message);
-        // Fallback to PostgreSQL for now
-        const pgUser = await storage.getUserByEmail(userEmail);
-        if (!pgUser) {
-          return res.json({ role: 'resident' });
-        }
-        const pgAccess = await storage.getUserStrataAccess(pgUser.id, id);
-        userAccess = pgAccess;
-        user = pgUser;
+
+      const dbUser = await storage.getUserByEmail(userEmail);
+      if (!dbUser) {
+        return res.json({ role: 'resident' });
       }
+      user = dbUser;
+      userAccess = await storage.getUserStrataAccess(dbUser.id, id);
       
       if (!userAccess) {
         console.log('🏠 No strata access found, defaulting to resident');
@@ -2202,7 +1962,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/users/:userId/strata-assignments', isAuthenticatedUnified, async (req: any, res) => {
     try {
       // Check if user is admin
-      if (!req.firebaseUser?.email === 'rfinnbogason@gmail.com' && !req.authenticatedUser?.email === 'rfinnbogason@gmail.com' && !req.user?.claims?.email === 'rfinnbogason@gmail.com') {
+      if (!req.user?.email === 'rfinnbogason@gmail.com' && !req.user?.email === 'rfinnbogason@gmail.com' && !req.user?.claims?.email === 'rfinnbogason@gmail.com') {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
       
@@ -2290,7 +2050,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/pending-registrations', isAuthenticatedUnified, async (req: any, res) => {
     try {
       // Check if user is admin
-      if (!req.firebaseUser?.email === 'rfinnbogason@gmail.com' && !req.authenticatedUser?.email === 'rfinnbogason@gmail.com' && !req.user?.claims?.email === 'rfinnbogason@gmail.com') {
+      if (!req.user?.email === 'rfinnbogason@gmail.com' && !req.user?.email === 'rfinnbogason@gmail.com' && !req.user?.claims?.email === 'rfinnbogason@gmail.com') {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
       
@@ -2305,7 +2065,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/pending-registrations/:id/approve', isAuthenticatedUnified, async (req: any, res) => {
     try {
       // Check if user is admin
-      if (!req.firebaseUser?.email === 'rfinnbogason@gmail.com' && !req.authenticatedUser?.email === 'rfinnbogason@gmail.com' && !req.user?.claims?.email === 'rfinnbogason@gmail.com') {
+      if (!req.user?.email === 'rfinnbogason@gmail.com' && !req.user?.email === 'rfinnbogason@gmail.com' && !req.user?.claims?.email === 'rfinnbogason@gmail.com') {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
       
@@ -2337,7 +2097,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/pending-registrations/:id/reject', isAuthenticatedUnified, async (req: any, res) => {
     try {
       // Check if user is admin
-      if (!req.firebaseUser?.email === 'rfinnbogason@gmail.com' && !req.authenticatedUser?.email === 'rfinnbogason@gmail.com' && !req.user?.claims?.email === 'rfinnbogason@gmail.com') {
+      if (!req.user?.email === 'rfinnbogason@gmail.com' && !req.user?.email === 'rfinnbogason@gmail.com' && !req.user?.claims?.email === 'rfinnbogason@gmail.com') {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
       }
       
@@ -2480,7 +2240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🔍 GET document-folders for strata ${id}, parent: ${parent || 'null'}`);
       
-      // Use the correct Firebase function for fetching folders
+      // Fetch folders
       const folders = await storage.getStrataDocumentFolders(id, parent);
       
       console.log(`📁 Route returning ${folders?.length || 0} folders:`, folders);
@@ -2627,12 +2387,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
       
-      console.log(`📤 Uploading file to Firebase Storage...`);
-      // Upload file to Firebase Storage
-      const fileName = `${Date.now()}_${file.originalname}`;
-      const folder = `documents/${id}`;
-      const fileUrl = await uploadFileToStorage(fileName, file.buffer, file.mimetype, folder);
-      console.log(`✅ File uploaded to Firebase Storage: ${fileUrl}`);
+      // Upload file to Vercel Blob
+      const fileName = `documents/${id}/${Date.now()}_${file.originalname}`;
+      const fileUrl = await uploadToBlob(file.buffer, fileName, file.mimetype);
       
       const documentData = {
         title: req.body.title,
@@ -2896,7 +2653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const reminderData = insertPaymentReminderSchema.parse({
         ...req.body,
-        createdBy: req.authenticatedUser.id,
+        createdBy: req.user.id,
       });
 
       // Special handling for monthly strata fee with "all units"
@@ -3154,7 +2911,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/funds/:id/transactions', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.authenticatedUser.id;
+      const userId = req.user.id;
       const transactionData = insertFundTransactionSchema.parse({
         ...req.body,
         fundId: id,
@@ -3257,7 +3014,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Actually delete the meeting from Firebase instead of just marking as cancelled
+      // Actually delete the meeting from database
       await storage.deleteMeeting(meetingId);
       console.log('✅ Meeting deleted successfully:', meetingId);
       res.json({ message: "Meeting deleted successfully" });
@@ -3401,10 +3158,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             trialEndDate = new Date();
             trialEndDate.setDate(trialEndDate.getDate() + (extendDays || 30));
           }
-          trialStartDate = currentSubscription.trialStartDate || Timestamp.now();
+          trialStartDate = currentSubscription.trialStartDate || new Date();
         } else {
           // Resetting to new trial - 30 days from now
-          trialStartDate = Timestamp.now();
+          trialStartDate = new Date();
           trialEndDate = new Date();
           trialEndDate.setDate(trialEndDate.getDate() + 30);
         }
@@ -3421,7 +3178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       if (trialEndDate) {
-        subscriptionData['subscription.trialEndDate'] = Timestamp.fromDate(trialEndDate);
+        subscriptionData['subscription.trialEndDate'] = trialEndDate;
       }
       if (trialStartDate) {
         subscriptionData['subscription.trialStartDate'] = trialStartDate;
@@ -3452,20 +3209,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/users', isAuthenticatedUnified, isAdmin, async (req: any, res) => {
     try {
       console.log("Admin user creation - Request body:", req.body);
-      console.log("Admin user creation - Firebase user:", req.firebaseUser);
-      console.log("Admin user creation - Authenticated user:", req.authenticatedUser);
-      
       const { email, firstName, lastName, role, temporaryPassword } = req.body;
-      
-      // Check if user already exists in PostgreSQL
+
+      // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(400).json({ message: "User with this email already exists" });
       }
-      
+
       // Hash the temporary password
-      const passwordHash = await bcrypt.hash(temporaryPassword, 10);
-      
+      const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+
       // Create user in PostgreSQL
       const user = await storage.createUser({
         email,
@@ -3475,41 +3229,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: role || 'resident',
         isActive: true,
         passwordHash,
-        mustChangePassword: true, // Force password change on first login
+        mustChangePassword: true,
       });
-      
-      // Also create user in Firebase
-      try {
-        const { userMigration } = await import('./firebase-user-migration');
-        
-        const pgUser = {
-          id: user.id,
-          email: user.email || '',
-          first_name: user.firstName || '',
-          last_name: user.lastName || '',
-          role: user.role,
-          is_active: user.isActive !== false,
-          created_at: new Date().toISOString()
-        };
 
-        const firebaseResult = await userMigration.createFirebaseUser(pgUser, temporaryPassword);
-        console.log("Firebase user creation result:", firebaseResult);
-        
-        res.json({
-          ...user,
-          firebaseCreated: firebaseResult.status === 'success',
-          firebaseUid: firebaseResult.firebaseUid,
-          temporaryPassword: firebaseResult.tempPassword
-        });
-      } catch (firebaseError: any) {
-        console.error("Error creating Firebase user:", firebaseError);
-        // Still return the PostgreSQL user even if Firebase creation fails
-        res.json({
-          ...user,
-          firebaseCreated: false,
-          firebaseError: firebaseError.message
-        });
-      }
+      res.json({
+        ...user,
+        temporaryPassword,
+      });
     } catch (error) {
       console.error("Error creating user:", error);
       res.status(500).json({ message: "Failed to create user" });
@@ -3550,7 +3276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/admin/users/:userId', isAuthenticatedUnified, isAdmin, async (req: any, res) => {
     try {
       console.log("DELETE user request - userId:", req.params.userId);
-      console.log("DELETE user request - user:", req.user?.email || req.firebaseUser?.email);
+      console.log("DELETE user request - user:", req.user?.email || req.user?.email);
       
       const { userId } = req.params;
       
@@ -3597,20 +3323,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // Firebase debug endpoint to see what's actually stored
-  app.get('/api/debug/firebase-data', async (req: any, res) => {
+  // Debug endpoint to see what's stored
+  app.get('/api/debug/db-data-summary', async (req: any, res) => {
     try {
       const userAccess = await storage.getAllUserStrataAccess();
       const strata = await storage.getAllStrata();
       const users = await storage.getAllUsers();
-      
+
       res.json({
         userAccess,
         strata: strata.map(s => ({ id: s.id, name: s.name })),
-        users: users.map(u => ({ id: u.id, email: u.email, username: u.username }))
+        users: users.map(u => ({ id: u.id, email: u.email }))
       });
     } catch (error: any) {
-      console.error('Firebase debug error:', error);
+      console.error('Debug error:', error);
       res.status(500).json({ message: error.message });
     }
   });
@@ -3730,7 +3456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/strata/:id/messages', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.authenticatedUser?.id || req.firebaseUser?.uid || 'master-admin';
+      const userId = req.user?.id || req.user?.id || 'master-admin';
 
       console.log('📬 Fetching messages for strata:', id, 'User:', userId);
 
@@ -3753,17 +3479,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         params: req.params,
         body: req.body,
         user: {
-          id: req.authenticatedUser?.id,
-          email: req.authenticatedUser?.email,
-          firebaseUser: req.firebaseUser?.email
+          id: req.user?.id,
+          email: req.user?.email,
         }
       });
 
       const { id } = req.params;
-      const userId = req.authenticatedUser?.id || req.firebaseUser?.uid || 'master-admin';
+      const userId = req.user?.id || 'master-admin';
       const { recipientIds, isGroupChat, ...bodyData } = req.body;
       
-      const user = req.authenticatedUser || req.firebaseUser;
+      const user = req.user;
       const senderName = user?.firstName && user?.lastName 
         ? `${user.firstName} ${user.lastName}`
         : user?.email || 'Unknown User';
@@ -3869,7 +3594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/messages/:id/read', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.authenticatedUser?.email || req.firebaseUser?.email || 'master-admin';
+      const userId = req.user?.email || req.user?.email || 'master-admin';
       
       console.log(`📖 Marking message ${id} as read for user ${userId}`);
       
@@ -3884,7 +3609,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/conversations/:id', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.authenticatedUser.id;
+      const userId = req.user.id;
       
       // Delete all messages in the conversation where user is sender or recipient
       await storage.deleteConversation(id, userId);
@@ -3900,7 +3625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/strata/:id/announcements', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.authenticatedUser.id;
+      const userId = req.user.id;
 
       console.log('📢 Fetching announcements for strata:', id);
 
@@ -3926,8 +3651,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/strata/:id/announcements', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id: strataId } = req.params;
-      const userId = req.authenticatedUser.id;
-      const userName = req.authenticatedUser.name || req.authenticatedUser.email;
+      const userId = req.user.id;
+      const userName = req.user.name || req.user.email;
 
       console.log('📢 Creating announcement for strata:', strataId);
 
@@ -3993,7 +3718,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/announcements/:id', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.authenticatedUser.id;
+      const userId = req.user.id;
 
       console.log('📢 Updating announcement:', id);
 
@@ -4025,7 +3750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/announcements/:id', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.authenticatedUser.id;
+      const userId = req.user.id;
 
       console.log('📢 Deleting announcement:', id);
 
@@ -4058,7 +3783,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/announcements/:id/read', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.authenticatedUser.id;
+      const userId = req.user.id;
 
       console.log('📢 Marking announcement as read:', id, 'by user:', userId);
 
@@ -4118,7 +3843,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dismissed Notifications API Routes
   app.get('/api/dismissed-notifications', isAuthenticatedUnified, async (req: any, res) => {
     try {
-      const userId = req.authenticatedUser.id;
+      const userId = req.user.id;
       const dismissed = await storage.getUserDismissedNotifications(userId);
       res.json(dismissed);
     } catch (error) {
@@ -4130,7 +3855,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Password change API routes
   app.patch('/api/user/password-changed', isAuthenticatedUnified, async (req: any, res) => {
     try {
-      const userEmail = req.firebaseUser?.email || req.authenticatedUser?.email;
+      const userEmail = req.user?.email || req.user?.email;
       
       if (!userEmail) {
         return res.status(400).json({ message: "User email not found" });
@@ -4146,7 +3871,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/user/must-change-password', isAuthenticatedUnified, async (req: any, res) => {
     try {
-      const userEmail = req.firebaseUser?.email || req.authenticatedUser?.email;
+      const userEmail = req.user?.email || req.user?.email;
       
       if (!userEmail) {
         return res.status(400).json({ message: "User email not found" });
@@ -4161,79 +3886,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin password reset endpoint
-  app.post('/api/admin/reset-firebase-password', isAuthenticatedUnified, isAdmin, async (req: any, res) => {
+  // Admin password reset endpoint
+  app.post('/api/admin/reset-password', isAuthenticatedUnified, isAdmin, async (req: any, res) => {
     try {
       const { email, newPassword } = req.body;
-      
+
       if (!email || !newPassword) {
         return res.status(400).json({ message: "Email and new password are required" });
       }
 
-      const apiKey = process.env.VITE_FIREBASE_API_KEY;
-      if (!apiKey) {
-        return res.status(500).json({ message: "Firebase API key not configured" });
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
       }
 
-      // Get the user's UID first
-      const lookupResponse = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: [email]
-        })
-      });
+      const passwordHash = await bcrypt.hash(newPassword, 12);
+      await storage.updateUser(user.id, { passwordHash, mustChangePassword: true });
 
-      if (!lookupResponse.ok) {
-        return res.status(404).json({ message: "User not found in Firebase" });
-      }
-
-      const lookupData = await lookupResponse.json();
-      if (!lookupData.users || lookupData.users.length === 0) {
-        return res.status(404).json({ message: "User not found in Firebase" });
-      }
-
-      const firebaseUid = lookupData.users[0].localId;
-
-      // Update the user's password
-      const updateResponse = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:update?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          localId: firebaseUid,
-          password: newPassword,
-          returnSecureToken: false
-        })
-      });
-
-      if (!updateResponse.ok) {
-        const updateError = await updateResponse.json();
-        return res.status(500).json({ 
-          message: "Failed to update Firebase password",
-          error: updateError.error?.message 
-        });
-      }
-
-      // Also ensure the user has mustChangePassword set in our database
-      await storage.setMustChangePassword(email);
-
-      res.json({ 
-        message: "Firebase password updated successfully",
-        email: email,
-        passwordSet: newPassword
-      });
+      res.json({ message: "Password reset successfully", email });
     } catch (error) {
-      console.error('Error resetting Firebase password:', error);
+      console.error('Error resetting password:', error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
 
   app.post('/api/dismissed-notifications', isAuthenticatedUnified, async (req: any, res) => {
     try {
-      const userId = req.authenticatedUser.id;
+      const userId = req.user.id;
       const notificationData = insertDismissedNotificationSchema.parse({
         ...req.body,
         userId: userId
@@ -4386,7 +4065,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/reports/:reportId/download", isAuthenticatedUnified, async (req: any, res) => {
     try {
       console.log(`📥 Download request for report: ${req.params.reportId}`);
-      console.log(`👤 User: ${req.authenticatedUser?.email || 'unknown'}`);
+      console.log(`👤 User: ${req.user?.email || 'unknown'}`);
 
       const report = await storage.getReport(req.params.reportId);
 
@@ -4703,162 +4382,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Migrate existing PostgreSQL user to Firebase
-  app.post("/api/migration/migrate-user/:userId", isAuthenticatedUnified, isAdmin, async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const { userMigration } = await import('./firebase-user-migration');
-      
-      // Get the PostgreSQL user
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found in PostgreSQL' });
-      }
-
-      // Convert to the format expected by migration
-      const pgUser = {
-        id: user.id,
-        email: user.email || '',
-        first_name: user.firstName || '',
-        last_name: user.lastName || '',
-        role: user.role,
-        is_active: user.isActive !== false,
-        created_at: new Date().toISOString()
-      };
-
-      // Create in Firebase
-      const result = await userMigration.createFirebaseUser(pgUser);
-      
-      res.json({
-        success: true,
-        user: pgUser,
-        firebaseResult: result
-      });
-    } catch (error: any) {
-      console.error('Error migrating user to Firebase:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // Create master admin in Firebase
-  app.post("/api/migration/create-master-admin", isAuthenticatedUnified, isAdmin, async (req, res) => {
-    try {
-      const { userMigration } = await import('./firebase-user-migration');
-      
-      // Get the current PostgreSQL user
-      const users = await storage.getAllUsers();
-      const masterAdmin = users.find(u => u.email === 'rfinnbogason@gmail.com');
-      
-      if (!masterAdmin) {
-        return res.status(404).json({ error: 'Master admin user not found in PostgreSQL' });
-      }
-
-      // Convert to the format expected by migration
-      const pgUser = {
-        id: masterAdmin.id,
-        email: masterAdmin.email || '',
-        first_name: masterAdmin.firstName || 'Master',
-        last_name: masterAdmin.lastName || 'Admin', 
-        role: 'master_admin',
-        is_active: true,
-        created_at: new Date().toISOString()
-      };
-
-      // Create in Firebase
-      const result = await userMigration.createFirebaseUser(pgUser);
-      
-      res.json({
-        success: true,
-        result
-      });
-    } catch (error: any) {
-      console.error('Error creating master admin in Firebase:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // Register Firebase migration routes
-  registerFirebaseMigrationRoutes(app);
-
-  // Firebase Storage test upload route
-  app.post("/api/upload/test", isAuthenticatedUnified, upload.single('file'), async (req: any, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
-
-      const fileName = `test-${Date.now()}-${req.file.originalname}`;
-      const fileUrl = await uploadFileToStorage(
-        fileName,
-        req.file.buffer,
-        req.file.mimetype,
-        'test-uploads'
-      );
-
-      res.json({ 
-        message: "File uploaded successfully to Firebase Storage!",
-        fileUrl: fileUrl,
-        fileName: fileName
-      });
-    } catch (error: any) {
-      console.error("Firebase Storage upload error:", error);
-      res.status(500).json({ message: "Upload failed: " + error.message });
-    }
-  });
+  // Migration routes removed - Firebase no longer used
 
   // User Settings Management Endpoints
   
-  // Create user profile (for new signups)
-  app.post("/api/user/profile", async (req, res) => {
+  // Create user profile (handled by /api/auth/signup now, kept for compatibility)
+  app.post("/api/user/profile", isAuthenticatedUnified, async (req: any, res) => {
     try {
-      // Get token from Authorization header
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ message: "No token provided" });
-      }
+      const user = req.user;
+      const { firstName, lastName, phoneNumber } = req.body;
 
-      const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-
-      // Verify Firebase token using Firebase Admin SDK
-      const decodedToken = await auth.verifyIdToken(token);
-      const userId = decodedToken.uid;
-      const userEmail = decodedToken.email;
-
-      const { email, firstName, lastName, phoneNumber } = req.body;
-      console.log("Creating user profile for:", userId, { email: email || userEmail, firstName, lastName });
-
-      // Create user document in Firestore
-      await storage.createUser({
-        id: userId,
-        email: email || userEmail,
-        firstName: firstName || "",
-        lastName: lastName || "",
-        phoneNumber: phoneNumber || "",
-        role: "chairperson", // Default role for trial signups
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+      await storage.updateUser(user.id, {
+        firstName: firstName || user.firstName,
+        lastName: lastName || user.lastName,
       });
-
-      console.log("✅ User profile created successfully");
 
       res.json({
         message: "Profile created successfully",
-        user: { email: email || userEmail, firstName, lastName, phoneNumber }
+        user: { email: user.email, firstName, lastName, phoneNumber },
       });
     } catch (error: any) {
       console.error("Failed to create profile:", error);
-      if (error.code === 'auth/id-token-expired') {
-        return res.status(401).json({ message: "Token expired" });
-      } else if (error.code === 'auth/argument-error') {
-        return res.status(401).json({ message: "Invalid token format" });
-      }
       res.status(500).json({ message: "Failed to create profile", error: error.message });
     }
   });
 
   // Get user profile
-  app.get("/api/user/profile", authenticateFirebase, async (req, res) => {
+  app.get("/api/user/profile", isAuthenticatedUnified, async (req: any, res) => {
     try {
       const user = req.user;
       if (!user) {
@@ -4867,9 +4417,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         email: user.email,
-        displayName: user.displayName || "",
-        phoneNumber: user.phoneNumber || "",
-        photoURL: user.photoURL || ""
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        profileImageUrl: user.profileImageUrl || "",
       });
     } catch (error: any) {
       console.error("Failed to fetch user profile:", error);
@@ -4878,19 +4428,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update user profile
-  app.patch("/api/user/profile", authenticateFirebase, async (req, res) => {
+  app.patch("/api/user/profile", isAuthenticatedUnified, async (req: any, res) => {
     try {
       const user = req.user;
       if (!user) {
         return res.status(401).json({ message: "Authentication required" });
       }
 
-      const { displayName, phoneNumber } = req.body;
-      console.log("Profile update request for user:", user.uid, { displayName, phoneNumber });
+      const { firstName, lastName } = req.body;
+      await storage.updateUser(user.id, { firstName, lastName });
 
       res.json({
         message: "Profile updated successfully",
-        user: { displayName, phoneNumber }
       });
     } catch (error: any) {
       console.error("Failed to update profile:", error);
@@ -4899,7 +4448,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get notification settings
-  app.get("/api/user/notification-settings", authenticateFirebase, async (req, res) => {
+  app.get("/api/user/notification-settings", isAuthenticatedUnified, async (req, res) => {
     try {
       const user = req.user;
       if (!user) {
@@ -4933,7 +4482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update notification settings
-  app.patch("/api/user/notification-settings", authenticateFirebase, async (req, res) => {
+  app.patch("/api/user/notification-settings", isAuthenticatedUnified, async (req, res) => {
     try {
       const user = req.user;
       if (!user) {
@@ -4953,7 +4502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send test notification
-  app.post("/api/user/test-notification", authenticateFirebase, async (req, res) => {
+  app.post("/api/user/test-notification", isAuthenticatedUnified, async (req, res) => {
     try {
       const user = req.user;
       if (!user) {
@@ -4971,8 +4520,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Change user password
-  app.post("/api/user/change-password", authenticateFirebase, async (req, res) => {
+  // Change user password (now handled by /api/auth/change-password, kept for compatibility)
+  app.post("/api/user/change-password", isAuthenticatedUnified, async (req: any, res) => {
     try {
       const user = req.user;
       if (!user) {
@@ -4981,55 +4530,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { currentPassword, newPassword } = req.body;
 
-      if (!currentPassword || !newPassword) {
-        return res.status(400).json({ message: "Current password and new password are required" });
+      if (!newPassword) {
+        return res.status(400).json({ message: "New password is required" });
       }
 
-      if (newPassword.length < 8) {
-        return res.status(400).json({ message: "New password must be at least 8 characters long" });
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "New password must be at least 6 characters long" });
       }
 
-      // Use Firebase Admin to update the password
-      // Note: Firebase Admin SDK allows updating password without verifying the current password
-      // In production, you should verify the current password first using Firebase Auth REST API
-      await admin.auth().updateUser(user.uid, {
-        password: newPassword
-      });
+      if (user.passwordHash && currentPassword) {
+        const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+        if (!valid) {
+          return res.status(401).json({ message: "Current password is incorrect" });
+        }
+      }
 
-      console.log(`Password changed successfully for user: ${user.email}`);
+      const passwordHash = await bcrypt.hash(newPassword, 12);
+      await storage.updateUser(user.id, { passwordHash, mustChangePassword: false });
 
-      res.json({
-        message: "Password changed successfully"
-      });
+      res.json({ message: "Password changed successfully" });
     } catch (error: any) {
       console.error("Failed to change password:", error);
       res.status(500).json({ message: "Failed to change password" });
     }
   });
 
-  // Debug endpoint to check Firebase data
-  app.get("/api/debug/firebase-data", authenticateFirebase, async (req, res) => {
+  // Debug endpoint to check database data
+  app.get("/api/debug/db-data", isAuthenticatedUnified, async (req: any, res) => {
     try {
       const strataId = 'b13712fb-8c41-4d4e-b5b4-a8f196b09716';
-      
-      // Get fee tiers using correct method
+
       const feeTiers = await storage.getStrataFeeTiers(strataId);
-      console.log("📊 Fee Tiers from Firebase:", JSON.stringify(feeTiers, null, 2));
-      
-      // Get units using correct method
+
       const units = await storage.getStrataUnits(strataId);
-      console.log("🏠 Units from Firebase:", JSON.stringify(units, null, 2));
       
       res.json({
         feeTiers: feeTiers || [],
         units: units || [],
         strataId: strataId,
-        message: "Firebase data retrieved successfully",
+        message: "Data retrieved successfully",
         timestamp: new Date().toISOString()
       });
     } catch (error: any) {
-      console.error("❌ Failed to get Firebase data:", error);
-      res.status(500).json({ message: "Failed to get Firebase data: " + error.message });
+      console.error("❌ Failed to get data:", error);
+      res.status(500).json({ message: "Failed to get data: " + error.message });
     }
   });
 
@@ -5037,7 +4581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/strata/:id/notifications', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userEmail = req.firebaseUser?.email;
+      const userEmail = req.user?.email;
 
       console.log('🔔 Fetching notifications for:', { strataId: id, userEmail });
 
@@ -5047,11 +4591,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get user ID from email - use existing method to get strata users
       const strataUsers = await storage.getStrataUsers(id);
-      const currentUser = strataUsers.find((su: any) => su.user?.email === userEmail || su.userId === req.firebaseUser?.uid);
+      const currentUser = strataUsers.find((su: any) => su.user?.email === userEmail || su.userId === req.user?.id);
 
       console.log('👤 Current user lookup:', {
         email: userEmail,
-        firebaseUid: req.firebaseUser?.uid,
+        userId: req.user?.id,
         foundUser: currentUser?.userId || currentUser?.id,
         totalUsers: strataUsers.length
       });
@@ -5094,7 +4638,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint to create a sample meeting invitation notification
   app.post('/api/test/meeting-invitation', isAuthenticatedUnified, async (req: any, res) => {
     try {
-      const userEmail = req.firebaseUser?.email;
+      const userEmail = req.user?.email;
       if (!userEmail) {
         return res.status(401).json({ message: "User not authenticated" });
       }

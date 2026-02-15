@@ -5,17 +5,13 @@ import * as schema from "@shared/schema";
 
 neonConfig.webSocketConstructor = ws;
 
-// PostgreSQL database is optional - we're using Firestore as primary database
-let pool: Pool | null = null;
-let db: ReturnType<typeof drizzle> | null = null;
-
-if (process.env.DATABASE_URL) {
-  console.log('📊 Connecting to PostgreSQL database...');
-  pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  db = drizzle({ client: pool, schema });
-  console.log('✅ PostgreSQL database connected');
-} else {
-  console.log('ℹ️  PostgreSQL not configured - using Firestore only');
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required. Set it in your .env file.');
 }
+
+console.log('📊 Connecting to PostgreSQL database...');
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const db = drizzle({ client: pool, schema });
+console.log('✅ PostgreSQL database connected');
 
 export { pool, db };

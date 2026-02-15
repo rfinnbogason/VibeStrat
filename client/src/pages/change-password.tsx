@@ -1,39 +1,30 @@
-import { useState, useEffect } from "react";
-import { updatePassword, onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { AlertTriangle, Lock } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
 
 export default function ChangePassword() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-      if (!user) {
-        // If not authenticated, redirect to login
-        setLocation("/login");
-      }
-    });
-    return unsubscribe;
-  }, [setLocation]);
+  if (!isAuthenticated) {
+    setLocation("/login");
+    return null;
+  }
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Validate passwords
       if (newPassword !== confirmPassword) {
         toast({
           title: "Password Mismatch",
@@ -52,23 +43,20 @@ export default function ChangePassword() {
         return;
       }
 
-      if (!currentUser) {
-        toast({
-          title: "Authentication Error",
-          description: "You must be logged in to change your password.",
-          variant: "destructive",
-        });
-        return;
-      }
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ newPassword }),
+      });
 
-      // Update Firebase password
-      await updatePassword(currentUser, newPassword);
+      const data = await res.json();
 
-      // Update the user's mustChangePassword flag in our database
-      try {
-        await apiRequest("PATCH", "/api/user/password-changed", {});
-      } catch (dbError) {
-        console.log("Database update error (non-critical):", dbError);
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to update password");
       }
 
       toast({
@@ -76,21 +64,11 @@ export default function ChangePassword() {
         description: "Your password has been successfully changed!",
       });
 
-      // Redirect to dashboard
-      setLocation("/dashboard");
+      setLocation("/");
     } catch (error: any) {
-      console.error("Password change error:", error);
-      let errorMessage = "Failed to update password. Please try again.";
-      
-      if (error.code === 'auth/weak-password') {
-        errorMessage = "Password is too weak. Please choose a stronger password.";
-      } else if (error.code === 'auth/requires-recent-login') {
-        errorMessage = "Please log out and log back in, then try changing your password.";
-      }
-      
       toast({
         title: "Password Change Failed",
-        description: errorMessage,
+        description: error.message || "Failed to update password. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -116,7 +94,7 @@ export default function ChangePassword() {
             </CardDescription>
           </div>
         </CardHeader>
-        
+
         <CardContent>
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
             <div className="flex items-start space-x-3">
@@ -171,8 +149,8 @@ export default function ChangePassword() {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full bg-slate-900 hover:bg-slate-800 text-white"
               disabled={isLoading}
             >
@@ -182,7 +160,7 @@ export default function ChangePassword() {
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              © 2025 VibeStrat. All rights reserved.
+              &copy; 2025 VibeStrat. All rights reserved.
             </p>
           </div>
         </CardContent>

@@ -66,8 +66,8 @@ export function OnboardingWizard({ open, onComplete }: OnboardingWizardProps) {
     try {
       console.log("🏢 Creating strata:", data.name);
 
-      // Get Firebase token
-      const token = await user.getIdToken();
+      // Get auth token
+      const token = localStorage.getItem("auth_token");
 
       // Create the strata
       const strataResponse = await fetch('/api/strata', {

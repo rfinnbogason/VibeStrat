@@ -1,5 +1,4 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { auth } from "./firebase";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -10,9 +9,7 @@ async function throwIfResNotOk(res: Response) {
       try {
         const errorData = JSON.parse(text);
 
-        // Trial expired - redirect to upgrade page
         if (errorData.trialExpired || errorData.requiresUpgrade) {
-          console.warn('🎟️ Trial expired - redirecting to upgrade page');
           window.location.href = '/trial-expired';
           throw new Error('Trial expired - redirecting...');
         }
@@ -21,28 +18,16 @@ async function throwIfResNotOk(res: Response) {
       }
     }
 
-    console.error('🚨 API Request Failed:', {
-      status: res.status,
-      statusText: res.statusText,
-      responseText: text
-    });
     throw new Error(`${res.status}: ${text}`);
   }
 }
 
-async function getAuthHeaders(): Promise<Record<string, string>> {
+function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {};
-  
-  // Get Firebase auth token if user is authenticated
-  if (auth.currentUser) {
-    try {
-      const token = await auth.currentUser.getIdToken();
-      headers.Authorization = `Bearer ${token}`;
-    } catch (error) {
-      console.warn("Failed to get Firebase token:", error);
-    }
+  const token = localStorage.getItem("auth_token");
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
-  
   return headers;
 }
 
@@ -51,24 +36,19 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const authHeaders = await getAuthHeaders();
-
-  // ✅ SECURITY: Removed API request/response logging
+  const authHeaders = getAuthHeaders();
 
   const isFormData = data instanceof FormData;
 
   const res = await fetch(url, {
     method,
     headers: {
-      // Don't set Content-Type for FormData - browser sets it automatically with boundary
       ...(data && !isFormData ? { "Content-Type": "application/json" } : {}),
       ...authHeaders,
     },
     body: isFormData ? data : (data ? JSON.stringify(data) : undefined),
     credentials: "include",
   });
-
-  // ✅ SECURITY: Removed API response logging
 
   await throwIfResNotOk(res);
   return res;
@@ -80,8 +60,8 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const authHeaders = await getAuthHeaders();
-    
+    const authHeaders = getAuthHeaders();
+
     const res = await fetch(queryKey[0] as string, {
       credentials: "include",
       headers: authHeaders,

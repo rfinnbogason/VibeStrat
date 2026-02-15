@@ -30,6 +30,11 @@ export class PostgresStorage implements IStorage {
     return result[0] ?? undefined;
   }
 
+  async getUserByResetToken(hashedToken: string): Promise<User | undefined> {
+    const result = await db!.select().from(schema.users).where(eq(schema.users.passwordResetToken, hashedToken)).limit(1);
+    return result[0] ?? undefined;
+  }
+
   async createUser(userData: InsertUser): Promise<User> {
     const id = userData.id || crypto.randomUUID();
     const now = new Date();

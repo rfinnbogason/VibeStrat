@@ -79,7 +79,6 @@ import {
   Trash2,
   X,
   Check,
-  Cloud,
   MoreHorizontal,
   CreditCard,
   DollarSign,
@@ -1146,7 +1145,7 @@ export default function Admin() {
   const [selectedRegistrationForApproval, setSelectedRegistrationForApproval] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<"strata" | "users" | "registrations" | "subscriptions">("strata");
 
-  // Check if user is admin - for Firebase users, we only check email since role is handled server-side
+  // Check if user is master admin
   if (!isAuthenticated || user?.email !== 'rfinnbogason@gmail.com') {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -1402,21 +1401,6 @@ export default function Admin() {
     },
   });
 
-  const migrateUserToFirebaseMutation = useMutation({
-    mutationFn: async (userId: string) => {
-      return apiRequest('POST', `/api/migration/migrate-user/${userId}`, {});
-    },
-    onSuccess: (data) => {
-      toast({ 
-        title: "Success", 
-        description: `User migrated to Firebase successfully. Temporary password: ${data.firebaseResult?.tempPassword || 'VibeStrat2025!'}` 
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
-  });
 
   const updateSubscriptionMutation = useMutation({
     mutationFn: async (data: { strataId: string; subscriptionData: z.infer<typeof subscriptionSchema> }) => {
@@ -1884,13 +1868,6 @@ export default function Admin() {
                                 }}>
                                   <UserPlus className="mr-2 h-3 w-3" />
                                   Assign to Strata
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => migrateUserToFirebaseMutation.mutate(user.id)}
-                                  disabled={migrateUserToFirebaseMutation.isPending}
-                                >
-                                  <Cloud className="mr-2 h-3 w-3" />
-                                  Migrate to Firebase
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 

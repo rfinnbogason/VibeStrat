@@ -91,11 +91,7 @@ class PushNotificationService {
   }
 
   private async getAuthToken(): Promise<string | null> {
-    // Get Firebase auth token from your auth context
-    const { getAuth } = await import('firebase/auth');
-    const auth = getAuth();
-    const user = auth.currentUser;
-    return user ? await user.getIdToken() : null;
+    return localStorage.getItem('auth_token');
   }
 
   private handleForegroundNotification(notification: PushNotificationSchema): void {

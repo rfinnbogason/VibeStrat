@@ -11,8 +11,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation } from "wouter";
 import Sidebar from "./sidebar";
 import { apiRequest } from "@/lib/queryClient";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useStrata } from "@/lib/strata-context";
@@ -120,14 +118,11 @@ export default function Header() {
     },
   });
 
+  const { signOut } = useAuth();
+
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-      toast({
-        title: "Signed Out",
-        description: "You have been signed out successfully.",
-      });
-      // Redirect to landing page after sign out
+      await signOut();
       window.location.href = "/";
     } catch (error: any) {
       toast({
