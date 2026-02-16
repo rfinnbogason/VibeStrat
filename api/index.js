@@ -1,5 +1,10 @@
+"use strict";
+var __create = Object.create;
 var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __esm = (fn, res) => function __init() {
   return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
 };
@@ -7,6 +12,23 @@ var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
 };
+var __copyProps = (to, from, except, desc2) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc2 = __getOwnPropDesc(from, key)) || desc2.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // shared/schema.ts
 var schema_exports = {};
@@ -92,495 +114,484 @@ __export(schema_exports, {
   vendors: () => vendors,
   vendorsRelations: () => vendorsRelations
 });
-import {
-  pgTable,
-  text,
-  varchar,
-  timestamp,
-  jsonb,
-  index,
-  integer,
-  decimal,
-  boolean,
-  uuid
-} from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
-var sessions, users, strata, units, userStrataAccess, vendors, vendorContracts, vendorHistory, expenses, quotes, meetings, meetingInvitees, documentFolders, documents, maintenanceRequests, maintenanceProjects, announcements, funds, fundTransactions, pendingStrataRegistrations, messages, residentDirectory, notifications, dismissedNotifications, usersRelations, strataRelations, meetingsRelations, meetingInviteesRelations, unitsRelations, userStrataAccessRelations, vendorsRelations, expensesRelations, quotesRelations, maintenanceRequestsRelations, maintenanceProjectsRelations, announcementsRelations, fundsRelations, fundTransactionsRelations, vendorContractsRelations, vendorHistoryRelations, documentFoldersRelations, documentsRelations, messagesRelations, residentDirectoryRelations, notificationsRelations, dismissedNotificationsRelations, feeTiers, feeTiersRelations, repairRequests, repairRequestsRelations, paymentReminders, paymentRemindersRelations, reports, reportsRelations, insertStrataSchema, insertUnitSchema, insertVendorSchema, insertExpenseSchema, insertQuoteSchema, insertMeetingSchema, insertMaintenanceRequestSchema, insertMaintenanceProjectSchema, insertAnnouncementSchema, insertUserStrataAccessSchema, insertVendorContractSchema, insertVendorHistorySchema, insertFundSchema, insertFundTransactionSchema, insertPendingStrataRegistrationSchema, insertDocumentFolderSchema, insertDocumentSchema, insertMessageSchema, insertResidentDirectorySchema, insertPaymentReminderSchema, insertReportSchema, insertNotificationSchema, insertDismissedNotificationSchema, insertMeetingInviteeSchema, insertFeeTierSchema, insertRepairRequestSchema;
+var import_pg_core, import_drizzle_orm, import_drizzle_zod, import_zod, sessions, users, strata, units, userStrataAccess, vendors, vendorContracts, vendorHistory, expenses, quotes, meetings, meetingInvitees, documentFolders, documents, maintenanceRequests, maintenanceProjects, announcements, funds, fundTransactions, pendingStrataRegistrations, messages, residentDirectory, notifications, dismissedNotifications, usersRelations, strataRelations, meetingsRelations, meetingInviteesRelations, unitsRelations, userStrataAccessRelations, vendorsRelations, expensesRelations, quotesRelations, maintenanceRequestsRelations, maintenanceProjectsRelations, announcementsRelations, fundsRelations, fundTransactionsRelations, vendorContractsRelations, vendorHistoryRelations, documentFoldersRelations, documentsRelations, messagesRelations, residentDirectoryRelations, notificationsRelations, dismissedNotificationsRelations, feeTiers, feeTiersRelations, repairRequests, repairRequestsRelations, paymentReminders, paymentRemindersRelations, reports, reportsRelations, insertStrataSchema, insertUnitSchema, insertVendorSchema, insertExpenseSchema, insertQuoteSchema, insertMeetingSchema, insertMaintenanceRequestSchema, insertMaintenanceProjectSchema, insertAnnouncementSchema, insertUserStrataAccessSchema, insertVendorContractSchema, insertVendorHistorySchema, insertFundSchema, insertFundTransactionSchema, insertPendingStrataRegistrationSchema, insertDocumentFolderSchema, insertDocumentSchema, insertMessageSchema, insertResidentDirectorySchema, insertPaymentReminderSchema, insertReportSchema, insertNotificationSchema, insertDismissedNotificationSchema, insertMeetingInviteeSchema, insertFeeTierSchema, insertRepairRequestSchema;
 var init_schema = __esm({
   "shared/schema.ts"() {
     "use strict";
-    sessions = pgTable(
+    import_pg_core = require("drizzle-orm/pg-core");
+    import_drizzle_orm = require("drizzle-orm");
+    import_drizzle_zod = require("drizzle-zod");
+    import_zod = require("zod");
+    sessions = (0, import_pg_core.pgTable)(
       "sessions",
       {
-        sid: varchar("sid").primaryKey(),
-        sess: jsonb("sess").notNull(),
-        expire: timestamp("expire").notNull()
+        sid: (0, import_pg_core.varchar)("sid").primaryKey(),
+        sess: (0, import_pg_core.jsonb)("sess").notNull(),
+        expire: (0, import_pg_core.timestamp)("expire").notNull()
       },
-      (table) => [index("IDX_session_expire").on(table.expire)]
+      (table) => [(0, import_pg_core.index)("IDX_session_expire").on(table.expire)]
     );
-    users = pgTable("users", {
-      id: varchar("id").primaryKey().notNull(),
-      email: varchar("email").unique(),
-      firstName: varchar("first_name"),
-      lastName: varchar("last_name"),
-      profileImageUrl: varchar("profile_image_url"),
-      passwordHash: varchar("password_hash"),
-      passwordResetToken: varchar("password_reset_token"),
-      passwordResetExpires: timestamp("password_reset_expires"),
-      isActive: boolean("is_active").default(true),
-      lastLoginAt: timestamp("last_login_at"),
-      role: varchar("role").notNull().default("resident"),
-      mustChangePassword: boolean("must_change_password").default(false),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+    users = (0, import_pg_core.pgTable)("users", {
+      id: (0, import_pg_core.varchar)("id").primaryKey().notNull(),
+      email: (0, import_pg_core.varchar)("email").unique(),
+      firstName: (0, import_pg_core.varchar)("first_name"),
+      lastName: (0, import_pg_core.varchar)("last_name"),
+      profileImageUrl: (0, import_pg_core.varchar)("profile_image_url"),
+      passwordHash: (0, import_pg_core.varchar)("password_hash"),
+      passwordResetToken: (0, import_pg_core.varchar)("password_reset_token"),
+      passwordResetExpires: (0, import_pg_core.timestamp)("password_reset_expires"),
+      isActive: (0, import_pg_core.boolean)("is_active").default(true),
+      lastLoginAt: (0, import_pg_core.timestamp)("last_login_at"),
+      role: (0, import_pg_core.varchar)("role").notNull().default("resident"),
+      mustChangePassword: (0, import_pg_core.boolean)("must_change_password").default(false),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    strata = pgTable("strata", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      name: varchar("name", { length: 255 }).notNull(),
-      address: text("address").notNull(),
-      city: varchar("city", { length: 100 }),
-      province: varchar("province", { length: 50 }),
-      postalCode: varchar("postal_code", { length: 20 }),
-      country: varchar("country", { length: 50 }).default("Canada"),
-      phoneNumber: varchar("phone_number", { length: 20 }),
-      email: varchar("email", { length: 255 }),
-      unitCount: integer("unit_count").notNull(),
-      corporationNumber: varchar("corporation_number", { length: 100 }),
-      incorporationDate: timestamp("incorporation_date"),
-      managementCompany: varchar("management_company", { length: 255 }),
-      managementContactName: varchar("management_contact_name", { length: 255 }),
-      managementContactEmail: varchar("management_contact_email", { length: 255 }),
-      managementContactPhone: varchar("management_contact_phone", { length: 20 }),
-      bylawsUrl: varchar("bylaws_url"),
-      feeStructure: jsonb("fee_structure"),
-      status: varchar("status", { length: 50 }).notNull().default("active"),
+    strata = (0, import_pg_core.pgTable)("strata", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      name: (0, import_pg_core.varchar)("name", { length: 255 }).notNull(),
+      address: (0, import_pg_core.text)("address").notNull(),
+      city: (0, import_pg_core.varchar)("city", { length: 100 }),
+      province: (0, import_pg_core.varchar)("province", { length: 50 }),
+      postalCode: (0, import_pg_core.varchar)("postal_code", { length: 20 }),
+      country: (0, import_pg_core.varchar)("country", { length: 50 }).default("Canada"),
+      phoneNumber: (0, import_pg_core.varchar)("phone_number", { length: 20 }),
+      email: (0, import_pg_core.varchar)("email", { length: 255 }),
+      unitCount: (0, import_pg_core.integer)("unit_count").notNull(),
+      corporationNumber: (0, import_pg_core.varchar)("corporation_number", { length: 100 }),
+      incorporationDate: (0, import_pg_core.timestamp)("incorporation_date"),
+      managementCompany: (0, import_pg_core.varchar)("management_company", { length: 255 }),
+      managementContactName: (0, import_pg_core.varchar)("management_contact_name", { length: 255 }),
+      managementContactEmail: (0, import_pg_core.varchar)("management_contact_email", { length: 255 }),
+      managementContactPhone: (0, import_pg_core.varchar)("management_contact_phone", { length: 20 }),
+      bylawsUrl: (0, import_pg_core.varchar)("bylaws_url"),
+      feeStructure: (0, import_pg_core.jsonb)("fee_structure"),
+      status: (0, import_pg_core.varchar)("status", { length: 50 }).notNull().default("active"),
       // active, inactive, archived
-      notes: text("notes"),
+      notes: (0, import_pg_core.text)("notes"),
       // Subscription fields
-      subscriptionStatus: varchar("subscription_status", { length: 50 }).notNull().default("trial"),
+      subscriptionStatus: (0, import_pg_core.varchar)("subscription_status", { length: 50 }).notNull().default("trial"),
       // trial, active, cancelled, expired, free
-      subscriptionTier: varchar("subscription_tier", { length: 50 }).notNull().default("standard"),
+      subscriptionTier: (0, import_pg_core.varchar)("subscription_tier", { length: 50 }).notNull().default("standard"),
       // standard, premium, free
-      monthlyRate: decimal("monthly_rate", { precision: 10, scale: 2 }).default("79.95"),
-      trialStartDate: timestamp("trial_start_date"),
-      trialEndDate: timestamp("trial_end_date"),
-      subscriptionStartDate: timestamp("subscription_start_date"),
-      subscriptionEndDate: timestamp("subscription_end_date"),
-      lastPaymentDate: timestamp("last_payment_date"),
-      nextPaymentDate: timestamp("next_payment_date"),
-      isFreeForever: boolean("is_free_forever").default(false),
-      createdBy: varchar("created_by"),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+      monthlyRate: (0, import_pg_core.decimal)("monthly_rate", { precision: 10, scale: 2 }).default("79.95"),
+      trialStartDate: (0, import_pg_core.timestamp)("trial_start_date"),
+      trialEndDate: (0, import_pg_core.timestamp)("trial_end_date"),
+      subscriptionStartDate: (0, import_pg_core.timestamp)("subscription_start_date"),
+      subscriptionEndDate: (0, import_pg_core.timestamp)("subscription_end_date"),
+      lastPaymentDate: (0, import_pg_core.timestamp)("last_payment_date"),
+      nextPaymentDate: (0, import_pg_core.timestamp)("next_payment_date"),
+      isFreeForever: (0, import_pg_core.boolean)("is_free_forever").default(false),
+      createdBy: (0, import_pg_core.varchar)("created_by"),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    units = pgTable("units", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      unitNumber: varchar("unit_number", { length: 50 }).notNull(),
-      unitType: varchar("unit_type", { length: 50 }),
+    units = (0, import_pg_core.pgTable)("units", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      unitNumber: (0, import_pg_core.varchar)("unit_number", { length: 50 }).notNull(),
+      unitType: (0, import_pg_core.varchar)("unit_type", { length: 50 }),
       // Studio, One Bedroom, Two Bedroom, etc.
-      feeTierId: varchar("fee_tier_id", { length: 255 }),
+      feeTierId: (0, import_pg_core.varchar)("fee_tier_id", { length: 255 }),
       // Reference to fee tier ID
-      ownerId: varchar("owner_id").references(() => users.id),
-      ownerName: varchar("owner_name", { length: 255 }),
-      ownerEmail: varchar("owner_email", { length: 255 }),
-      ownerPhone: varchar("owner_phone", { length: 50 }),
-      squareFootage: integer("square_footage"),
-      balconySize: integer("balcony_size"),
-      parkingSpaces: integer("parking_spaces").default(0),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+      ownerId: (0, import_pg_core.varchar)("owner_id").references(() => users.id),
+      ownerName: (0, import_pg_core.varchar)("owner_name", { length: 255 }),
+      ownerEmail: (0, import_pg_core.varchar)("owner_email", { length: 255 }),
+      ownerPhone: (0, import_pg_core.varchar)("owner_phone", { length: 50 }),
+      squareFootage: (0, import_pg_core.integer)("square_footage"),
+      balconySize: (0, import_pg_core.integer)("balcony_size"),
+      parkingSpaces: (0, import_pg_core.integer)("parking_spaces").default(0),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    userStrataAccess = pgTable("user_strata_access", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      userId: varchar("user_id").notNull().references(() => users.id),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      role: varchar("role").notNull(),
+    userStrataAccess = (0, import_pg_core.pgTable)("user_strata_access", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      userId: (0, import_pg_core.varchar)("user_id").notNull().references(() => users.id),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      role: (0, import_pg_core.varchar)("role").notNull(),
       // chairperson, treasurer, secretary, council_member, property_manager, resident
-      canPostAnnouncements: boolean("can_post_announcements").default(false),
-      createdAt: timestamp("created_at").defaultNow()
+      canPostAnnouncements: (0, import_pg_core.boolean)("can_post_announcements").default(false),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow()
     });
-    vendors = pgTable("vendors", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      name: varchar("name", { length: 255 }).notNull(),
-      contactInfo: jsonb("contact_info"),
+    vendors = (0, import_pg_core.pgTable)("vendors", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      name: (0, import_pg_core.varchar)("name", { length: 255 }).notNull(),
+      contactInfo: (0, import_pg_core.jsonb)("contact_info"),
       // {email, phone, address, website}
-      serviceCategories: text("service_categories").array(),
-      rating: decimal("rating", { precision: 3, scale: 2 }),
-      businessLicense: varchar("business_license"),
-      insurance: jsonb("insurance"),
+      serviceCategories: (0, import_pg_core.text)("service_categories").array(),
+      rating: (0, import_pg_core.decimal)("rating", { precision: 3, scale: 2 }),
+      businessLicense: (0, import_pg_core.varchar)("business_license"),
+      insurance: (0, import_pg_core.jsonb)("insurance"),
       // {provider, policyNumber, expiryDate, coverageAmount}
-      emergencyContact: varchar("emergency_contact"),
-      isPreferred: boolean("is_preferred").default(false),
-      notes: text("notes"),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+      emergencyContact: (0, import_pg_core.varchar)("emergency_contact"),
+      isPreferred: (0, import_pg_core.boolean)("is_preferred").default(false),
+      notes: (0, import_pg_core.text)("notes"),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    vendorContracts = pgTable("vendor_contracts", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      vendorId: uuid("vendor_id").notNull().references(() => vendors.id),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      contractName: varchar("contract_name", { length: 255 }).notNull(),
-      description: text("description"),
-      contractDocument: varchar("contract_document"),
+    vendorContracts = (0, import_pg_core.pgTable)("vendor_contracts", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      vendorId: (0, import_pg_core.uuid)("vendor_id").notNull().references(() => vendors.id),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      contractName: (0, import_pg_core.varchar)("contract_name", { length: 255 }).notNull(),
+      description: (0, import_pg_core.text)("description"),
+      contractDocument: (0, import_pg_core.varchar)("contract_document"),
       // file path/URL to uploaded contract
-      startDate: timestamp("start_date").notNull(),
-      endDate: timestamp("end_date"),
-      autoRenew: boolean("auto_renew").default(false),
-      renewalTerms: text("renewal_terms"),
-      costAmount: decimal("cost_amount", { precision: 10, scale: 2 }).notNull(),
-      costFrequency: varchar("cost_frequency", { length: 20 }).notNull(),
+      startDate: (0, import_pg_core.timestamp)("start_date").notNull(),
+      endDate: (0, import_pg_core.timestamp)("end_date"),
+      autoRenew: (0, import_pg_core.boolean)("auto_renew").default(false),
+      renewalTerms: (0, import_pg_core.text)("renewal_terms"),
+      costAmount: (0, import_pg_core.decimal)("cost_amount", { precision: 10, scale: 2 }).notNull(),
+      costFrequency: (0, import_pg_core.varchar)("cost_frequency", { length: 20 }).notNull(),
       // 'monthly', 'quarterly', 'annually', 'one-time'
-      paymentTerms: varchar("payment_terms", { length: 100 }),
-      serviceScope: text("service_scope"),
-      status: varchar("status", { length: 50 }).notNull().default("active"),
+      paymentTerms: (0, import_pg_core.varchar)("payment_terms", { length: 100 }),
+      serviceScope: (0, import_pg_core.text)("service_scope"),
+      status: (0, import_pg_core.varchar)("status", { length: 50 }).notNull().default("active"),
       // 'active', 'expired', 'cancelled', 'pending'
-      createdBy: varchar("created_by").notNull().references(() => users.id),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+      createdBy: (0, import_pg_core.varchar)("created_by").notNull().references(() => users.id),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    vendorHistory = pgTable("vendor_history", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      vendorId: uuid("vendor_id").notNull().references(() => vendors.id),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      eventType: varchar("event_type", { length: 50 }).notNull(),
+    vendorHistory = (0, import_pg_core.pgTable)("vendor_history", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      vendorId: (0, import_pg_core.uuid)("vendor_id").notNull().references(() => vendors.id),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      eventType: (0, import_pg_core.varchar)("event_type", { length: 50 }).notNull(),
       // 'service_completed', 'issue_reported', 'contract_signed', 'payment_made', 'note_added'
-      title: varchar("title", { length: 255 }).notNull(),
-      description: text("description"),
-      rating: integer("rating"),
+      title: (0, import_pg_core.varchar)("title", { length: 255 }).notNull(),
+      description: (0, import_pg_core.text)("description"),
+      rating: (0, import_pg_core.integer)("rating"),
       // 1-5 stars for service quality
-      cost: decimal("cost", { precision: 10, scale: 2 }),
-      attachments: text("attachments").array(),
+      cost: (0, import_pg_core.decimal)("cost", { precision: 10, scale: 2 }),
+      attachments: (0, import_pg_core.text)("attachments").array(),
       // photos, documents related to the event
-      recordedBy: varchar("recorded_by").notNull().references(() => users.id),
-      eventDate: timestamp("event_date").notNull(),
-      createdAt: timestamp("created_at").defaultNow()
+      recordedBy: (0, import_pg_core.varchar)("recorded_by").notNull().references(() => users.id),
+      eventDate: (0, import_pg_core.timestamp)("event_date").notNull(),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow()
     });
-    expenses = pgTable("expenses", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      vendorId: uuid("vendor_id").references(() => vendors.id),
-      amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-      description: text("description").notNull(),
-      category: varchar("category", { length: 100 }),
-      isRecurring: boolean("is_recurring").notNull().default(false),
-      expenseDate: timestamp("expense_date").defaultNow().notNull(),
-      recurringFrequency: varchar("recurring_frequency", { length: 20 }),
+    expenses = (0, import_pg_core.pgTable)("expenses", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      vendorId: (0, import_pg_core.uuid)("vendor_id").references(() => vendors.id),
+      amount: (0, import_pg_core.decimal)("amount", { precision: 10, scale: 2 }).notNull(),
+      description: (0, import_pg_core.text)("description").notNull(),
+      category: (0, import_pg_core.varchar)("category", { length: 100 }),
+      isRecurring: (0, import_pg_core.boolean)("is_recurring").notNull().default(false),
+      expenseDate: (0, import_pg_core.timestamp)("expense_date").defaultNow().notNull(),
+      recurringFrequency: (0, import_pg_core.varchar)("recurring_frequency", { length: 20 }),
       // 'weekly', 'monthly', 'annually'
-      status: varchar("status", { length: 50 }).notNull().default("pending"),
-      attachedReceipts: text("attached_receipts").array(),
-      submittedBy: varchar("submitted_by").notNull().references(() => users.id),
-      approvedBy: varchar("approved_by").references(() => users.id),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+      status: (0, import_pg_core.varchar)("status", { length: 50 }).notNull().default("pending"),
+      attachedReceipts: (0, import_pg_core.text)("attached_receipts").array(),
+      submittedBy: (0, import_pg_core.varchar)("submitted_by").notNull().references(() => users.id),
+      approvedBy: (0, import_pg_core.varchar)("approved_by").references(() => users.id),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    quotes = pgTable("quotes", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      vendorId: uuid("vendor_id").references(() => vendors.id),
+    quotes = (0, import_pg_core.pgTable)("quotes", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      vendorId: (0, import_pg_core.uuid)("vendor_id").references(() => vendors.id),
       // Made optional for new vendor quotes
-      expenseId: uuid("expense_id").references(() => expenses.id),
-      requesterId: varchar("requester_id").notNull().references(() => users.id),
+      expenseId: (0, import_pg_core.uuid)("expense_id").references(() => expenses.id),
+      requesterId: (0, import_pg_core.varchar)("requester_id").notNull().references(() => users.id),
       // Quote details
-      projectTitle: varchar("project_title", { length: 255 }).notNull(),
-      projectType: varchar("project_type", { length: 100 }).notNull(),
+      projectTitle: (0, import_pg_core.varchar)("project_title", { length: 255 }).notNull(),
+      projectType: (0, import_pg_core.varchar)("project_type", { length: 100 }).notNull(),
       // maintenance, renovation, emergency, inspection, etc.
-      description: text("description").notNull(),
-      scope: text("scope"),
+      description: (0, import_pg_core.text)("description").notNull(),
+      scope: (0, import_pg_core.text)("scope"),
       // Detailed scope of work
-      amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+      amount: (0, import_pg_core.decimal)("amount", { precision: 10, scale: 2 }).notNull(),
       // Vendor information (for new vendors not yet in our vendor database)
-      vendorName: varchar("vendor_name", { length: 255 }),
-      vendorEmail: varchar("vendor_email", { length: 255 }),
-      vendorPhone: varchar("vendor_phone", { length: 50 }),
-      vendorAddress: text("vendor_address"),
-      vendorWebsite: varchar("vendor_website", { length: 255 }),
-      vendorLicense: varchar("vendor_license", { length: 100 }),
-      vendorInsurance: boolean("vendor_insurance").default(false),
+      vendorName: (0, import_pg_core.varchar)("vendor_name", { length: 255 }),
+      vendorEmail: (0, import_pg_core.varchar)("vendor_email", { length: 255 }),
+      vendorPhone: (0, import_pg_core.varchar)("vendor_phone", { length: 50 }),
+      vendorAddress: (0, import_pg_core.text)("vendor_address"),
+      vendorWebsite: (0, import_pg_core.varchar)("vendor_website", { length: 255 }),
+      vendorLicense: (0, import_pg_core.varchar)("vendor_license", { length: 100 }),
+      vendorInsurance: (0, import_pg_core.boolean)("vendor_insurance").default(false),
       // Quote lifecycle
-      status: varchar("status", { length: 50 }).notNull().default("submitted"),
+      status: (0, import_pg_core.varchar)("status", { length: 50 }).notNull().default("submitted"),
       // submitted, under_review, approved, rejected, expired
-      priority: varchar("priority", { length: 20 }).notNull().default("normal"),
+      priority: (0, import_pg_core.varchar)("priority", { length: 20 }).notNull().default("normal"),
       // low, normal, high, urgent
-      submittedAt: timestamp("submitted_at").defaultNow(),
-      reviewedAt: timestamp("reviewed_at"),
-      approvedAt: timestamp("approved_at"),
-      rejectedAt: timestamp("rejected_at"),
-      approvedBy: varchar("approved_by").references(() => users.id),
-      rejectedBy: varchar("rejected_by").references(() => users.id),
-      rejectionReason: text("rejection_reason"),
+      submittedAt: (0, import_pg_core.timestamp)("submitted_at").defaultNow(),
+      reviewedAt: (0, import_pg_core.timestamp)("reviewed_at"),
+      approvedAt: (0, import_pg_core.timestamp)("approved_at"),
+      rejectedAt: (0, import_pg_core.timestamp)("rejected_at"),
+      approvedBy: (0, import_pg_core.varchar)("approved_by").references(() => users.id),
+      rejectedBy: (0, import_pg_core.varchar)("rejected_by").references(() => users.id),
+      rejectionReason: (0, import_pg_core.text)("rejection_reason"),
       // Quote validity
-      validUntil: timestamp("valid_until"),
-      startDate: timestamp("start_date"),
-      estimatedCompletion: timestamp("estimated_completion"),
+      validUntil: (0, import_pg_core.timestamp)("valid_until"),
+      startDate: (0, import_pg_core.timestamp)("start_date"),
+      estimatedCompletion: (0, import_pg_core.timestamp)("estimated_completion"),
       // Additional details
-      warranty: varchar("warranty", { length: 255 }),
-      paymentTerms: text("payment_terms"),
-      notes: text("notes"),
-      internalNotes: text("internal_notes"),
+      warranty: (0, import_pg_core.varchar)("warranty", { length: 255 }),
+      paymentTerms: (0, import_pg_core.text)("payment_terms"),
+      notes: (0, import_pg_core.text)("notes"),
+      internalNotes: (0, import_pg_core.text)("internal_notes"),
       // Private notes for strata management
       // Files and attachments
-      attachments: text("attachments").array(),
-      contractDocument: varchar("contract_document"),
+      attachments: (0, import_pg_core.text)("attachments").array(),
+      contractDocument: (0, import_pg_core.varchar)("contract_document"),
       // Contract file if approved
-      documentFolderId: uuid("document_folder_id").references(() => documentFolders.id),
+      documentFolderId: (0, import_pg_core.uuid)("document_folder_id").references(() => documentFolders.id),
       // Auto-created project folder
       // Conversion tracking
-      convertedToVendor: boolean("converted_to_vendor").default(false),
-      createdVendorId: uuid("created_vendor_id").references(() => vendors.id),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+      convertedToVendor: (0, import_pg_core.boolean)("converted_to_vendor").default(false),
+      createdVendorId: (0, import_pg_core.uuid)("created_vendor_id").references(() => vendors.id),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    meetings = pgTable("meetings", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      title: varchar("title", { length: 255 }).notNull(),
-      description: text("description"),
-      meetingType: varchar("meeting_type", { length: 50 }).notNull().default("board_meeting"),
-      meetingDate: timestamp("meeting_date").notNull(),
-      location: varchar("location", { length: 255 }),
-      chairperson: varchar("chairperson", { length: 255 }),
-      agenda: text("agenda"),
-      scheduledAt: timestamp("scheduled_at").notNull(),
-      audioUrl: varchar("audio_url"),
-      transcriptUrl: varchar("transcript_url"),
-      minutesUrl: varchar("minutes_url"),
-      minutes: text("minutes"),
-      transcription: text("transcription"),
-      reviewerId: varchar("reviewer_id").references(() => users.id),
-      status: varchar("status", { length: 50 }).notNull().default("scheduled"),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+    meetings = (0, import_pg_core.pgTable)("meetings", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      title: (0, import_pg_core.varchar)("title", { length: 255 }).notNull(),
+      description: (0, import_pg_core.text)("description"),
+      meetingType: (0, import_pg_core.varchar)("meeting_type", { length: 50 }).notNull().default("board_meeting"),
+      meetingDate: (0, import_pg_core.timestamp)("meeting_date").notNull(),
+      location: (0, import_pg_core.varchar)("location", { length: 255 }),
+      chairperson: (0, import_pg_core.varchar)("chairperson", { length: 255 }),
+      agenda: (0, import_pg_core.text)("agenda"),
+      scheduledAt: (0, import_pg_core.timestamp)("scheduled_at").notNull(),
+      audioUrl: (0, import_pg_core.varchar)("audio_url"),
+      transcriptUrl: (0, import_pg_core.varchar)("transcript_url"),
+      minutesUrl: (0, import_pg_core.varchar)("minutes_url"),
+      minutes: (0, import_pg_core.text)("minutes"),
+      transcription: (0, import_pg_core.text)("transcription"),
+      reviewerId: (0, import_pg_core.varchar)("reviewer_id").references(() => users.id),
+      status: (0, import_pg_core.varchar)("status", { length: 50 }).notNull().default("scheduled"),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    meetingInvitees = pgTable("meeting_invitees", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      meetingId: uuid("meeting_id").notNull().references(() => meetings.id, { onDelete: "cascade" }),
-      userId: varchar("user_id").notNull().references(() => users.id),
-      invitedBy: varchar("invited_by").notNull().references(() => users.id),
-      responseStatus: varchar("response_status", { length: 20 }).notNull().default("pending"),
+    meetingInvitees = (0, import_pg_core.pgTable)("meeting_invitees", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      meetingId: (0, import_pg_core.uuid)("meeting_id").notNull().references(() => meetings.id, { onDelete: "cascade" }),
+      userId: (0, import_pg_core.varchar)("user_id").notNull().references(() => users.id),
+      invitedBy: (0, import_pg_core.varchar)("invited_by").notNull().references(() => users.id),
+      responseStatus: (0, import_pg_core.varchar)("response_status", { length: 20 }).notNull().default("pending"),
       // pending, accepted, declined
-      respondedAt: timestamp("responded_at"),
-      notificationSent: boolean("notification_sent").default(false),
-      createdAt: timestamp("created_at").defaultNow()
+      respondedAt: (0, import_pg_core.timestamp)("responded_at"),
+      notificationSent: (0, import_pg_core.boolean)("notification_sent").default(false),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow()
     });
-    documentFolders = pgTable("document_folders", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      name: varchar("name", { length: 255 }).notNull(),
-      description: text("description"),
-      parentFolderId: uuid("parent_folder_id"),
-      path: varchar("path", { length: 500 }).notNull(),
+    documentFolders = (0, import_pg_core.pgTable)("document_folders", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      name: (0, import_pg_core.varchar)("name", { length: 255 }).notNull(),
+      description: (0, import_pg_core.text)("description"),
+      parentFolderId: (0, import_pg_core.uuid)("parent_folder_id"),
+      path: (0, import_pg_core.varchar)("path", { length: 500 }).notNull(),
       // e.g., "/Financial/2024/Budgets"
-      createdBy: varchar("created_by").notNull().references(() => users.id),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+      createdBy: (0, import_pg_core.varchar)("created_by").notNull().references(() => users.id),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    documents = pgTable("documents", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      folderId: uuid("folder_id").references(() => documentFolders.id),
-      title: varchar("title", { length: 255 }).notNull(),
-      description: text("description"),
-      type: varchar("type", { length: 100 }).notNull(),
-      fileUrl: varchar("file_url").notNull(),
-      fileName: varchar("file_name", { length: 255 }).notNull(),
-      fileSize: integer("file_size"),
-      mimeType: varchar("mime_type", { length: 100 }),
-      version: varchar("version", { length: 50 }).default("1.0"),
-      tags: text("tags").array(),
-      eSignatureStatus: varchar("e_signature_status", { length: 50 }),
-      uploadedBy: varchar("uploaded_by").notNull().references(() => users.id),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+    documents = (0, import_pg_core.pgTable)("documents", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      folderId: (0, import_pg_core.uuid)("folder_id").references(() => documentFolders.id),
+      title: (0, import_pg_core.varchar)("title", { length: 255 }).notNull(),
+      description: (0, import_pg_core.text)("description"),
+      type: (0, import_pg_core.varchar)("type", { length: 100 }).notNull(),
+      fileUrl: (0, import_pg_core.varchar)("file_url").notNull(),
+      fileName: (0, import_pg_core.varchar)("file_name", { length: 255 }).notNull(),
+      fileSize: (0, import_pg_core.integer)("file_size"),
+      mimeType: (0, import_pg_core.varchar)("mime_type", { length: 100 }),
+      version: (0, import_pg_core.varchar)("version", { length: 50 }).default("1.0"),
+      tags: (0, import_pg_core.text)("tags").array(),
+      eSignatureStatus: (0, import_pg_core.varchar)("e_signature_status", { length: 50 }),
+      uploadedBy: (0, import_pg_core.varchar)("uploaded_by").notNull().references(() => users.id),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    maintenanceRequests = pgTable("maintenance_requests", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      residentId: varchar("resident_id").notNull().references(() => users.id),
-      unitId: uuid("unit_id").references(() => units.id),
-      title: varchar("title", { length: 255 }).notNull(),
-      description: text("description").notNull(),
-      priority: varchar("priority", { length: 50 }).notNull().default("medium"),
-      status: varchar("status", { length: 50 }).notNull().default("submitted"),
-      assignedTo: varchar("assigned_to").references(() => users.id),
-      photos: text("photos").array(),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+    maintenanceRequests = (0, import_pg_core.pgTable)("maintenance_requests", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      residentId: (0, import_pg_core.varchar)("resident_id").notNull().references(() => users.id),
+      unitId: (0, import_pg_core.uuid)("unit_id").references(() => units.id),
+      title: (0, import_pg_core.varchar)("title", { length: 255 }).notNull(),
+      description: (0, import_pg_core.text)("description").notNull(),
+      priority: (0, import_pg_core.varchar)("priority", { length: 50 }).notNull().default("medium"),
+      status: (0, import_pg_core.varchar)("status", { length: 50 }).notNull().default("submitted"),
+      assignedTo: (0, import_pg_core.varchar)("assigned_to").references(() => users.id),
+      photos: (0, import_pg_core.text)("photos").array(),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    maintenanceProjects = pgTable("maintenance_projects", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      title: varchar("title", { length: 255 }).notNull(),
-      description: text("description"),
-      category: varchar("category", { length: 100 }).notNull(),
-      priority: varchar("priority", { length: 50 }).notNull().default("medium"),
-      status: varchar("status", { length: 50 }).notNull().default("planned"),
-      estimatedCost: decimal("estimated_cost", { precision: 10, scale: 2 }).notNull().default("0.00"),
-      actualCost: decimal("actual_cost", { precision: 10, scale: 2 }),
-      scheduledDate: timestamp("scheduled_date"),
-      completedDate: timestamp("completed_date"),
-      nextServiceDate: timestamp("next_service_date"),
-      contractor: varchar("contractor", { length: 255 }),
-      warranty: varchar("warranty", { length: 255 }),
-      notes: text("notes"),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+    maintenanceProjects = (0, import_pg_core.pgTable)("maintenance_projects", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      title: (0, import_pg_core.varchar)("title", { length: 255 }).notNull(),
+      description: (0, import_pg_core.text)("description"),
+      category: (0, import_pg_core.varchar)("category", { length: 100 }).notNull(),
+      priority: (0, import_pg_core.varchar)("priority", { length: 50 }).notNull().default("medium"),
+      status: (0, import_pg_core.varchar)("status", { length: 50 }).notNull().default("planned"),
+      estimatedCost: (0, import_pg_core.decimal)("estimated_cost", { precision: 10, scale: 2 }).notNull().default("0.00"),
+      actualCost: (0, import_pg_core.decimal)("actual_cost", { precision: 10, scale: 2 }),
+      scheduledDate: (0, import_pg_core.timestamp)("scheduled_date"),
+      completedDate: (0, import_pg_core.timestamp)("completed_date"),
+      nextServiceDate: (0, import_pg_core.timestamp)("next_service_date"),
+      contractor: (0, import_pg_core.varchar)("contractor", { length: 255 }),
+      warranty: (0, import_pg_core.varchar)("warranty", { length: 255 }),
+      notes: (0, import_pg_core.text)("notes"),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    announcements = pgTable("announcements", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      title: varchar("title", { length: 255 }).notNull(),
-      content: text("content").notNull(),
-      priority: varchar("priority", { length: 50 }).notNull().default("normal"),
-      publishedBy: varchar("published_by").notNull().references(() => users.id),
-      published: boolean("published").notNull().default(false),
-      isRecurring: boolean("is_recurring").notNull().default(false),
-      recurringPattern: varchar("recurring_pattern", { length: 50 }),
+    announcements = (0, import_pg_core.pgTable)("announcements", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      title: (0, import_pg_core.varchar)("title", { length: 255 }).notNull(),
+      content: (0, import_pg_core.text)("content").notNull(),
+      priority: (0, import_pg_core.varchar)("priority", { length: 50 }).notNull().default("normal"),
+      publishedBy: (0, import_pg_core.varchar)("published_by").notNull().references(() => users.id),
+      published: (0, import_pg_core.boolean)("published").notNull().default(false),
+      isRecurring: (0, import_pg_core.boolean)("is_recurring").notNull().default(false),
+      recurringPattern: (0, import_pg_core.varchar)("recurring_pattern", { length: 50 }),
       // daily, weekly, monthly, yearly
-      recurringInterval: integer("recurring_interval").default(1),
+      recurringInterval: (0, import_pg_core.integer)("recurring_interval").default(1),
       // every X days/weeks/months
-      recurringEndDate: timestamp("recurring_end_date"),
-      parentAnnouncementId: uuid("parent_announcement_id"),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+      recurringEndDate: (0, import_pg_core.timestamp)("recurring_end_date"),
+      parentAnnouncementId: (0, import_pg_core.uuid)("parent_announcement_id"),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    funds = pgTable("funds", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      name: varchar("name", { length: 255 }).notNull(),
-      type: varchar("type", { length: 50 }).notNull(),
+    funds = (0, import_pg_core.pgTable)("funds", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      name: (0, import_pg_core.varchar)("name", { length: 255 }).notNull(),
+      type: (0, import_pg_core.varchar)("type", { length: 50 }).notNull(),
       // reserve, operating, special_levy, investment
-      balance: decimal("balance", { precision: 10, scale: 2 }).notNull().default("0"),
-      target: decimal("target", { precision: 10, scale: 2 }),
-      interestRate: decimal("interest_rate", { precision: 5, scale: 4 }),
+      balance: (0, import_pg_core.decimal)("balance", { precision: 10, scale: 2 }).notNull().default("0"),
+      target: (0, import_pg_core.decimal)("target", { precision: 10, scale: 2 }),
+      interestRate: (0, import_pg_core.decimal)("interest_rate", { precision: 5, scale: 4 }),
       // Annual interest rate as decimal
-      compoundingFrequency: varchar("compounding_frequency", { length: 20 }).default("monthly"),
+      compoundingFrequency: (0, import_pg_core.varchar)("compounding_frequency", { length: 20 }).default("monthly"),
       // monthly, quarterly, annually
-      institution: varchar("institution", { length: 255 }),
-      accountNumber: varchar("account_number", { length: 100 }),
-      maturityDate: timestamp("maturity_date"),
-      autoRenewal: boolean("auto_renewal").default(false),
-      notes: text("notes"),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+      institution: (0, import_pg_core.varchar)("institution", { length: 255 }),
+      accountNumber: (0, import_pg_core.varchar)("account_number", { length: 100 }),
+      maturityDate: (0, import_pg_core.timestamp)("maturity_date"),
+      autoRenewal: (0, import_pg_core.boolean)("auto_renewal").default(false),
+      notes: (0, import_pg_core.text)("notes"),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    fundTransactions = pgTable("fund_transactions", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      fundId: uuid("fund_id").notNull().references(() => funds.id),
-      type: varchar("type", { length: 50 }).notNull(),
+    fundTransactions = (0, import_pg_core.pgTable)("fund_transactions", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      fundId: (0, import_pg_core.uuid)("fund_id").notNull().references(() => funds.id),
+      type: (0, import_pg_core.varchar)("type", { length: 50 }).notNull(),
       // deposit, withdrawal, interest, transfer_in, transfer_out
-      amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-      description: varchar("description", { length: 500 }),
-      relatedExpenseId: uuid("related_expense_id").references(() => expenses.id),
-      processedBy: varchar("processed_by").notNull().references(() => users.id),
-      transactionDate: timestamp("transaction_date").notNull(),
-      createdAt: timestamp("created_at").defaultNow()
+      amount: (0, import_pg_core.decimal)("amount", { precision: 10, scale: 2 }).notNull(),
+      description: (0, import_pg_core.varchar)("description", { length: 500 }),
+      relatedExpenseId: (0, import_pg_core.uuid)("related_expense_id").references(() => expenses.id),
+      processedBy: (0, import_pg_core.varchar)("processed_by").notNull().references(() => users.id),
+      transactionDate: (0, import_pg_core.timestamp)("transaction_date").notNull(),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow()
     });
-    pendingStrataRegistrations = pgTable("pending_strata_registrations", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataName: varchar("strata_name", { length: 255 }).notNull(),
-      address: varchar("address", { length: 500 }).notNull(),
-      city: varchar("city", { length: 100 }).notNull(),
-      province: varchar("province", { length: 50 }).notNull(),
-      postalCode: varchar("postal_code", { length: 20 }).notNull(),
-      unitCount: integer("unit_count").notNull(),
-      adminFirstName: varchar("admin_first_name", { length: 100 }).notNull(),
-      adminLastName: varchar("admin_last_name", { length: 100 }).notNull(),
-      adminEmail: varchar("admin_email", { length: 255 }).notNull(),
-      adminPhone: varchar("admin_phone", { length: 20 }).notNull(),
-      managementType: varchar("management_type", { length: 50 }).notNull(),
+    pendingStrataRegistrations = (0, import_pg_core.pgTable)("pending_strata_registrations", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataName: (0, import_pg_core.varchar)("strata_name", { length: 255 }).notNull(),
+      address: (0, import_pg_core.varchar)("address", { length: 500 }).notNull(),
+      city: (0, import_pg_core.varchar)("city", { length: 100 }).notNull(),
+      province: (0, import_pg_core.varchar)("province", { length: 50 }).notNull(),
+      postalCode: (0, import_pg_core.varchar)("postal_code", { length: 20 }).notNull(),
+      unitCount: (0, import_pg_core.integer)("unit_count").notNull(),
+      adminFirstName: (0, import_pg_core.varchar)("admin_first_name", { length: 100 }).notNull(),
+      adminLastName: (0, import_pg_core.varchar)("admin_last_name", { length: 100 }).notNull(),
+      adminEmail: (0, import_pg_core.varchar)("admin_email", { length: 255 }).notNull(),
+      adminPhone: (0, import_pg_core.varchar)("admin_phone", { length: 20 }).notNull(),
+      managementType: (0, import_pg_core.varchar)("management_type", { length: 50 }).notNull(),
       // self_managed, professional_managed
-      managementCompany: varchar("management_company", { length: 255 }),
-      description: text("description").notNull(),
-      specialRequirements: text("special_requirements"),
-      status: varchar("status", { length: 50 }).notNull().default("pending"),
+      managementCompany: (0, import_pg_core.varchar)("management_company", { length: 255 }),
+      description: (0, import_pg_core.text)("description").notNull(),
+      specialRequirements: (0, import_pg_core.text)("special_requirements"),
+      status: (0, import_pg_core.varchar)("status", { length: 50 }).notNull().default("pending"),
       // pending, approved, rejected
-      approvedBy: varchar("approved_by").references(() => users.id),
-      approvedAt: timestamp("approved_at"),
-      rejectionReason: text("rejection_reason"),
-      createdStrataId: uuid("created_strata_id").references(() => strata.id),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+      approvedBy: (0, import_pg_core.varchar)("approved_by").references(() => users.id),
+      approvedAt: (0, import_pg_core.timestamp)("approved_at"),
+      rejectionReason: (0, import_pg_core.text)("rejection_reason"),
+      createdStrataId: (0, import_pg_core.uuid)("created_strata_id").references(() => strata.id),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    messages = pgTable("messages", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      senderId: varchar("sender_id").notNull().references(() => users.id),
-      recipientId: varchar("recipient_id").references(() => users.id),
+    messages = (0, import_pg_core.pgTable)("messages", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      senderId: (0, import_pg_core.varchar)("sender_id").notNull().references(() => users.id),
+      recipientId: (0, import_pg_core.varchar)("recipient_id").references(() => users.id),
       // null for broadcast messages
-      subject: varchar("subject", { length: 255 }),
-      content: text("content").notNull(),
-      messageType: varchar("message_type", { length: 50 }).notNull().default("private"),
+      subject: (0, import_pg_core.varchar)("subject", { length: 255 }),
+      content: (0, import_pg_core.text)("content").notNull(),
+      messageType: (0, import_pg_core.varchar)("message_type", { length: 50 }).notNull().default("private"),
       // private, broadcast, announcement
-      isRead: boolean("is_read").default(false),
-      readAt: timestamp("read_at"),
-      parentMessageId: uuid("parent_message_id"),
+      isRead: (0, import_pg_core.boolean)("is_read").default(false),
+      readAt: (0, import_pg_core.timestamp)("read_at"),
+      parentMessageId: (0, import_pg_core.uuid)("parent_message_id"),
       // for replies - self-reference handled in relations
-      conversationId: uuid("conversation_id"),
+      conversationId: (0, import_pg_core.uuid)("conversation_id"),
       // for grouping messages into conversations
-      priority: varchar("priority", { length: 20 }).default("normal"),
+      priority: (0, import_pg_core.varchar)("priority", { length: 20 }).default("normal"),
       // low, normal, high, urgent
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    residentDirectory = pgTable("resident_directory", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      userId: varchar("user_id").notNull().references(() => users.id),
-      dwellingId: uuid("dwelling_id").references(() => units.id),
+    residentDirectory = (0, import_pg_core.pgTable)("resident_directory", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      userId: (0, import_pg_core.varchar)("user_id").notNull().references(() => users.id),
+      dwellingId: (0, import_pg_core.uuid)("dwelling_id").references(() => units.id),
       // Contact Information
-      primaryPhone: varchar("primary_phone", { length: 20 }),
-      secondaryPhone: varchar("secondary_phone", { length: 20 }),
-      workPhone: varchar("work_phone", { length: 20 }),
-      alternateEmail: varchar("alternate_email", { length: 255 }),
+      primaryPhone: (0, import_pg_core.varchar)("primary_phone", { length: 20 }),
+      secondaryPhone: (0, import_pg_core.varchar)("secondary_phone", { length: 20 }),
+      workPhone: (0, import_pg_core.varchar)("work_phone", { length: 20 }),
+      alternateEmail: (0, import_pg_core.varchar)("alternate_email", { length: 255 }),
       // Emergency Contact
-      emergencyContactName: varchar("emergency_contact_name", { length: 255 }),
-      emergencyContactPhone: varchar("emergency_contact_phone", { length: 20 }),
-      emergencyContactRelationship: varchar("emergency_contact_relationship", { length: 100 }),
-      emergencyContactEmail: varchar("emergency_contact_email", { length: 255 }),
+      emergencyContactName: (0, import_pg_core.varchar)("emergency_contact_name", { length: 255 }),
+      emergencyContactPhone: (0, import_pg_core.varchar)("emergency_contact_phone", { length: 20 }),
+      emergencyContactRelationship: (0, import_pg_core.varchar)("emergency_contact_relationship", { length: 100 }),
+      emergencyContactEmail: (0, import_pg_core.varchar)("emergency_contact_email", { length: 255 }),
       // Additional Details
-      moveInDate: timestamp("move_in_date"),
-      occupancyType: varchar("occupancy_type", { length: 50 }).default("owner"),
+      moveInDate: (0, import_pg_core.timestamp)("move_in_date"),
+      occupancyType: (0, import_pg_core.varchar)("occupancy_type", { length: 50 }).default("owner"),
       // owner, tenant, authorized_occupant
-      vehicleInfo: text("vehicle_info"),
+      vehicleInfo: (0, import_pg_core.text)("vehicle_info"),
       // JSON string for multiple vehicles
-      petInfo: text("pet_info"),
+      petInfo: (0, import_pg_core.text)("pet_info"),
       // JSON string for pet details
-      specialNotes: text("special_notes"),
+      specialNotes: (0, import_pg_core.text)("special_notes"),
       // Accessibility needs, delivery instructions, etc.
       // Privacy Settings
-      showInDirectory: boolean("show_in_directory").default(true),
-      showContactInfo: boolean("show_contact_info").default(true),
-      showEmergencyContact: boolean("show_emergency_contact").default(false),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+      showInDirectory: (0, import_pg_core.boolean)("show_in_directory").default(true),
+      showContactInfo: (0, import_pg_core.boolean)("show_contact_info").default(true),
+      showEmergencyContact: (0, import_pg_core.boolean)("show_emergency_contact").default(false),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    notifications = pgTable("notifications", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      userId: varchar("user_id").notNull().references(() => users.id),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      type: varchar("type", { length: 50 }).notNull(),
+    notifications = (0, import_pg_core.pgTable)("notifications", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      userId: (0, import_pg_core.varchar)("user_id").notNull().references(() => users.id),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      type: (0, import_pg_core.varchar)("type", { length: 50 }).notNull(),
       // message, announcement, meeting, quote, maintenance
-      title: varchar("title", { length: 255 }).notNull(),
-      message: text("message").notNull(),
-      relatedId: varchar("related_id"),
+      title: (0, import_pg_core.varchar)("title", { length: 255 }).notNull(),
+      message: (0, import_pg_core.text)("message").notNull(),
+      relatedId: (0, import_pg_core.varchar)("related_id"),
       // ID of the related entity (message, announcement, etc.)
-      isRead: boolean("is_read").default(false),
-      createdAt: timestamp("created_at").defaultNow()
+      isRead: (0, import_pg_core.boolean)("is_read").default(false),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow()
     });
-    dismissedNotifications = pgTable("dismissed_notifications", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      userId: varchar("user_id").notNull().references(() => users.id),
-      notificationId: varchar("notification_id").notNull(),
+    dismissedNotifications = (0, import_pg_core.pgTable)("dismissed_notifications", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      userId: (0, import_pg_core.varchar)("user_id").notNull().references(() => users.id),
+      notificationId: (0, import_pg_core.varchar)("notification_id").notNull(),
       // The ID of the notification (e.g., "announcement-123", "meeting-456")
-      notificationType: varchar("notification_type", { length: 50 }).notNull(),
+      notificationType: (0, import_pg_core.varchar)("notification_type", { length: 50 }).notNull(),
       // announcement, meeting, quote
-      dismissedAt: timestamp("dismissed_at").defaultNow()
+      dismissedAt: (0, import_pg_core.timestamp)("dismissed_at").defaultNow()
     });
-    usersRelations = relations(users, ({ many }) => ({
+    usersRelations = (0, import_drizzle_orm.relations)(users, ({ many }) => ({
       strataAccess: many(userStrataAccess),
       expenses: many(expenses),
       quotes: many(quotes),
@@ -592,7 +603,7 @@ var init_schema = __esm({
       notifications: many(notifications),
       dismissedNotifications: many(dismissedNotifications)
     }));
-    strataRelations = relations(strata, ({ many }) => ({
+    strataRelations = (0, import_drizzle_orm.relations)(strata, ({ many }) => ({
       units: many(units),
       userAccess: many(userStrataAccess),
       expenses: many(expenses),
@@ -606,7 +617,7 @@ var init_schema = __esm({
       messages: many(messages),
       residentDirectory: many(residentDirectory)
     }));
-    meetingsRelations = relations(meetings, ({ one, many }) => ({
+    meetingsRelations = (0, import_drizzle_orm.relations)(meetings, ({ one, many }) => ({
       strata: one(strata, {
         fields: [meetings.strataId],
         references: [strata.id]
@@ -617,7 +628,7 @@ var init_schema = __esm({
       }),
       invitees: many(meetingInvitees)
     }));
-    meetingInviteesRelations = relations(meetingInvitees, ({ one }) => ({
+    meetingInviteesRelations = (0, import_drizzle_orm.relations)(meetingInvitees, ({ one }) => ({
       meeting: one(meetings, {
         fields: [meetingInvitees.meetingId],
         references: [meetings.id]
@@ -633,7 +644,7 @@ var init_schema = __esm({
         relationName: "MeetingInviter"
       })
     }));
-    unitsRelations = relations(units, ({ one, many }) => ({
+    unitsRelations = (0, import_drizzle_orm.relations)(units, ({ one, many }) => ({
       strata: one(strata, {
         fields: [units.strataId],
         references: [strata.id]
@@ -644,7 +655,7 @@ var init_schema = __esm({
       }),
       maintenanceRequests: many(maintenanceRequests)
     }));
-    userStrataAccessRelations = relations(userStrataAccess, ({ one }) => ({
+    userStrataAccessRelations = (0, import_drizzle_orm.relations)(userStrataAccess, ({ one }) => ({
       user: one(users, {
         fields: [userStrataAccess.userId],
         references: [users.id]
@@ -654,13 +665,13 @@ var init_schema = __esm({
         references: [strata.id]
       })
     }));
-    vendorsRelations = relations(vendors, ({ many }) => ({
+    vendorsRelations = (0, import_drizzle_orm.relations)(vendors, ({ many }) => ({
       expenses: many(expenses),
       quotes: many(quotes),
       contracts: many(vendorContracts),
       history: many(vendorHistory)
     }));
-    expensesRelations = relations(expenses, ({ one, many }) => ({
+    expensesRelations = (0, import_drizzle_orm.relations)(expenses, ({ one, many }) => ({
       strata: one(strata, {
         fields: [expenses.strataId],
         references: [strata.id]
@@ -679,7 +690,7 @@ var init_schema = __esm({
       }),
       quotes: many(quotes)
     }));
-    quotesRelations = relations(quotes, ({ one }) => ({
+    quotesRelations = (0, import_drizzle_orm.relations)(quotes, ({ one }) => ({
       strata: one(strata, {
         fields: [quotes.strataId],
         references: [strata.id]
@@ -697,7 +708,7 @@ var init_schema = __esm({
         references: [users.id]
       })
     }));
-    maintenanceRequestsRelations = relations(maintenanceRequests, ({ one }) => ({
+    maintenanceRequestsRelations = (0, import_drizzle_orm.relations)(maintenanceRequests, ({ one }) => ({
       strata: one(strata, {
         fields: [maintenanceRequests.strataId],
         references: [strata.id]
@@ -715,13 +726,13 @@ var init_schema = __esm({
         references: [users.id]
       })
     }));
-    maintenanceProjectsRelations = relations(maintenanceProjects, ({ one }) => ({
+    maintenanceProjectsRelations = (0, import_drizzle_orm.relations)(maintenanceProjects, ({ one }) => ({
       strata: one(strata, {
         fields: [maintenanceProjects.strataId],
         references: [strata.id]
       })
     }));
-    announcementsRelations = relations(announcements, ({ one }) => ({
+    announcementsRelations = (0, import_drizzle_orm.relations)(announcements, ({ one }) => ({
       strata: one(strata, {
         fields: [announcements.strataId],
         references: [strata.id]
@@ -731,14 +742,14 @@ var init_schema = __esm({
         references: [users.id]
       })
     }));
-    fundsRelations = relations(funds, ({ one, many }) => ({
+    fundsRelations = (0, import_drizzle_orm.relations)(funds, ({ one, many }) => ({
       strata: one(strata, {
         fields: [funds.strataId],
         references: [strata.id]
       }),
       transactions: many(fundTransactions)
     }));
-    fundTransactionsRelations = relations(fundTransactions, ({ one }) => ({
+    fundTransactionsRelations = (0, import_drizzle_orm.relations)(fundTransactions, ({ one }) => ({
       fund: one(funds, {
         fields: [fundTransactions.fundId],
         references: [funds.id]
@@ -752,7 +763,7 @@ var init_schema = __esm({
         references: [expenses.id]
       })
     }));
-    vendorContractsRelations = relations(vendorContracts, ({ one }) => ({
+    vendorContractsRelations = (0, import_drizzle_orm.relations)(vendorContracts, ({ one }) => ({
       vendor: one(vendors, {
         fields: [vendorContracts.vendorId],
         references: [vendors.id]
@@ -766,7 +777,7 @@ var init_schema = __esm({
         references: [users.id]
       })
     }));
-    vendorHistoryRelations = relations(vendorHistory, ({ one }) => ({
+    vendorHistoryRelations = (0, import_drizzle_orm.relations)(vendorHistory, ({ one }) => ({
       vendor: one(vendors, {
         fields: [vendorHistory.vendorId],
         references: [vendors.id]
@@ -780,7 +791,7 @@ var init_schema = __esm({
         references: [users.id]
       })
     }));
-    documentFoldersRelations = relations(documentFolders, ({ one, many }) => ({
+    documentFoldersRelations = (0, import_drizzle_orm.relations)(documentFolders, ({ one, many }) => ({
       strata: one(strata, {
         fields: [documentFolders.strataId],
         references: [strata.id]
@@ -799,7 +810,7 @@ var init_schema = __esm({
       }),
       documents: many(documents)
     }));
-    documentsRelations = relations(documents, ({ one }) => ({
+    documentsRelations = (0, import_drizzle_orm.relations)(documents, ({ one }) => ({
       strata: one(strata, {
         fields: [documents.strataId],
         references: [strata.id]
@@ -813,7 +824,7 @@ var init_schema = __esm({
         references: [users.id]
       })
     }));
-    messagesRelations = relations(messages, ({ one, many }) => ({
+    messagesRelations = (0, import_drizzle_orm.relations)(messages, ({ one, many }) => ({
       strata: one(strata, {
         fields: [messages.strataId],
         references: [strata.id]
@@ -837,7 +848,7 @@ var init_schema = __esm({
         relationName: "MessageThread"
       })
     }));
-    residentDirectoryRelations = relations(residentDirectory, ({ one }) => ({
+    residentDirectoryRelations = (0, import_drizzle_orm.relations)(residentDirectory, ({ one }) => ({
       strata: one(strata, {
         fields: [residentDirectory.strataId],
         references: [strata.id]
@@ -851,7 +862,7 @@ var init_schema = __esm({
         references: [units.id]
       })
     }));
-    notificationsRelations = relations(notifications, ({ one }) => ({
+    notificationsRelations = (0, import_drizzle_orm.relations)(notifications, ({ one }) => ({
       user: one(users, {
         fields: [notifications.userId],
         references: [users.id]
@@ -861,105 +872,105 @@ var init_schema = __esm({
         references: [strata.id]
       })
     }));
-    dismissedNotificationsRelations = relations(dismissedNotifications, ({ one }) => ({
+    dismissedNotificationsRelations = (0, import_drizzle_orm.relations)(dismissedNotifications, ({ one }) => ({
       user: one(users, {
         fields: [dismissedNotifications.userId],
         references: [users.id]
       })
     }));
-    feeTiers = pgTable("fee_tiers", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      name: varchar("name", { length: 255 }).notNull(),
-      description: text("description"),
-      monthlyAmount: decimal("monthly_amount", { precision: 10, scale: 2 }).notNull(),
-      annualAmount: decimal("annual_amount", { precision: 10, scale: 2 }),
-      unitType: varchar("unit_type", { length: 50 }),
-      isDefault: boolean("is_default").default(false),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+    feeTiers = (0, import_pg_core.pgTable)("fee_tiers", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      name: (0, import_pg_core.varchar)("name", { length: 255 }).notNull(),
+      description: (0, import_pg_core.text)("description"),
+      monthlyAmount: (0, import_pg_core.decimal)("monthly_amount", { precision: 10, scale: 2 }).notNull(),
+      annualAmount: (0, import_pg_core.decimal)("annual_amount", { precision: 10, scale: 2 }),
+      unitType: (0, import_pg_core.varchar)("unit_type", { length: 50 }),
+      isDefault: (0, import_pg_core.boolean)("is_default").default(false),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    feeTiersRelations = relations(feeTiers, ({ one }) => ({
+    feeTiersRelations = (0, import_drizzle_orm.relations)(feeTiers, ({ one }) => ({
       strata: one(strata, {
         fields: [feeTiers.strataId],
         references: [strata.id]
       })
     }));
-    repairRequests = pgTable("repair_requests", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull().references(() => strata.id),
-      title: varchar("title", { length: 255 }).notNull(),
-      description: text("description").notNull(),
-      area: varchar("area", { length: 100 }),
-      location: varchar("location", { length: 255 }),
-      severity: varchar("severity", { length: 50 }).notNull().default("medium"),
-      status: varchar("status", { length: 50 }).notNull().default("suggested"),
-      estimatedCost: decimal("estimated_cost", { precision: 10, scale: 2 }),
-      actualCost: decimal("actual_cost", { precision: 10, scale: 2 }),
-      photos: text("photos").array(),
-      submittedBy: jsonb("submitted_by"),
+    repairRequests = (0, import_pg_core.pgTable)("repair_requests", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull().references(() => strata.id),
+      title: (0, import_pg_core.varchar)("title", { length: 255 }).notNull(),
+      description: (0, import_pg_core.text)("description").notNull(),
+      area: (0, import_pg_core.varchar)("area", { length: 100 }),
+      location: (0, import_pg_core.varchar)("location", { length: 255 }),
+      severity: (0, import_pg_core.varchar)("severity", { length: 50 }).notNull().default("medium"),
+      status: (0, import_pg_core.varchar)("status", { length: 50 }).notNull().default("suggested"),
+      estimatedCost: (0, import_pg_core.decimal)("estimated_cost", { precision: 10, scale: 2 }),
+      actualCost: (0, import_pg_core.decimal)("actual_cost", { precision: 10, scale: 2 }),
+      photos: (0, import_pg_core.text)("photos").array(),
+      submittedBy: (0, import_pg_core.jsonb)("submitted_by"),
       // { userId, name, email }
-      assignedTo: jsonb("assigned_to"),
-      statusHistory: jsonb("status_history"),
+      assignedTo: (0, import_pg_core.jsonb)("assigned_to"),
+      statusHistory: (0, import_pg_core.jsonb)("status_history"),
       // Array of { status, changedBy, changedAt }
-      scheduledDate: timestamp("scheduled_date"),
-      completedDate: timestamp("completed_date"),
-      notes: text("notes"),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+      scheduledDate: (0, import_pg_core.timestamp)("scheduled_date"),
+      completedDate: (0, import_pg_core.timestamp)("completed_date"),
+      notes: (0, import_pg_core.text)("notes"),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    repairRequestsRelations = relations(repairRequests, ({ one }) => ({
+    repairRequestsRelations = (0, import_drizzle_orm.relations)(repairRequests, ({ one }) => ({
       strata: one(strata, {
         fields: [repairRequests.strataId],
         references: [strata.id]
       })
     }));
-    paymentReminders = pgTable("payment_reminders", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull(),
-      unitId: uuid("unit_id"),
+    paymentReminders = (0, import_pg_core.pgTable)("payment_reminders", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull(),
+      unitId: (0, import_pg_core.uuid)("unit_id"),
       // Optional - for unit-specific reminders
-      title: varchar("title", { length: 255 }).notNull(),
-      description: text("description"),
-      reminderType: varchar("reminder_type").notNull(),
+      title: (0, import_pg_core.varchar)("title", { length: 255 }).notNull(),
+      description: (0, import_pg_core.text)("description"),
+      reminderType: (0, import_pg_core.varchar)("reminder_type").notNull(),
       // 'fee_overdue', 'monthly_fee', 'special_assessment', 'maintenance_fee', 'custom'
-      amount: decimal("amount", { precision: 10, scale: 2 }),
-      dueDate: timestamp("due_date"),
-      isRecurring: boolean("is_recurring").default(false),
-      recurringPattern: varchar("recurring_pattern"),
+      amount: (0, import_pg_core.decimal)("amount", { precision: 10, scale: 2 }),
+      dueDate: (0, import_pg_core.timestamp)("due_date"),
+      isRecurring: (0, import_pg_core.boolean)("is_recurring").default(false),
+      recurringPattern: (0, import_pg_core.varchar)("recurring_pattern"),
       // 'daily', 'weekly', 'monthly', 'yearly'
-      recurringInterval: integer("recurring_interval").default(1),
+      recurringInterval: (0, import_pg_core.integer)("recurring_interval").default(1),
       // every X days/weeks/months
       // Advanced recurring options (Outlook-style)
-      monthlyType: varchar("monthly_type"),
+      monthlyType: (0, import_pg_core.varchar)("monthly_type"),
       // 'date' (specific date), 'day' (e.g., first Monday), 'last_day' (last day of month)
-      monthlyDate: integer("monthly_date"),
+      monthlyDate: (0, import_pg_core.integer)("monthly_date"),
       // Day of month (1-31) when monthlyType is 'date'
-      monthlyWeekday: varchar("monthly_weekday"),
+      monthlyWeekday: (0, import_pg_core.varchar)("monthly_weekday"),
       // Day of week (monday, tuesday, etc.) when monthlyType is 'day'
-      monthlyWeekPosition: varchar("monthly_week_position"),
+      monthlyWeekPosition: (0, import_pg_core.varchar)("monthly_week_position"),
       // 'first', 'second', 'third', 'fourth', 'last' when monthlyType is 'day'
-      weeklyDays: text("weekly_days"),
+      weeklyDays: (0, import_pg_core.text)("weekly_days"),
       // JSON array of weekdays for weekly patterns
-      yearlyMonth: integer("yearly_month"),
+      yearlyMonth: (0, import_pg_core.integer)("yearly_month"),
       // Month (1-12) for yearly patterns
-      recurringEndDate: timestamp("recurring_end_date"),
-      nextReminderDate: timestamp("next_reminder_date"),
-      lastSentDate: timestamp("last_sent_date"),
-      remindersSentCount: integer("reminders_sent_count").default(0),
-      status: varchar("status").default("active"),
+      recurringEndDate: (0, import_pg_core.timestamp)("recurring_end_date"),
+      nextReminderDate: (0, import_pg_core.timestamp)("next_reminder_date"),
+      lastSentDate: (0, import_pg_core.timestamp)("last_sent_date"),
+      remindersSentCount: (0, import_pg_core.integer)("reminders_sent_count").default(0),
+      status: (0, import_pg_core.varchar)("status").default("active"),
       // 'active', 'paused', 'completed', 'cancelled'
-      priority: varchar("priority").default("normal"),
+      priority: (0, import_pg_core.varchar)("priority").default("normal"),
       // 'low', 'normal', 'high', 'urgent'
-      autoSend: boolean("auto_send").default(false),
-      reminderTime: varchar("reminder_time").default("09:00"),
+      autoSend: (0, import_pg_core.boolean)("auto_send").default(false),
+      reminderTime: (0, import_pg_core.varchar)("reminder_time").default("09:00"),
       // Time to send reminder (HH:MM format)
-      emailTemplate: text("email_template"),
-      createdBy: varchar("created_by").notNull(),
-      createdAt: timestamp("created_at").defaultNow(),
-      updatedAt: timestamp("updated_at").defaultNow()
+      emailTemplate: (0, import_pg_core.text)("email_template"),
+      createdBy: (0, import_pg_core.varchar)("created_by").notNull(),
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow(),
+      updatedAt: (0, import_pg_core.timestamp)("updated_at").defaultNow()
     });
-    paymentRemindersRelations = relations(paymentReminders, ({ one }) => ({
+    paymentRemindersRelations = (0, import_drizzle_orm.relations)(paymentReminders, ({ one }) => ({
       strata: one(strata, {
         fields: [paymentReminders.strataId],
         references: [strata.id]
@@ -973,30 +984,30 @@ var init_schema = __esm({
         references: [users.id]
       })
     }));
-    reports = pgTable("reports", {
-      id: uuid("id").primaryKey().defaultRandom(),
-      strataId: uuid("strata_id").notNull(),
-      reportType: varchar("report_type").notNull(),
+    reports = (0, import_pg_core.pgTable)("reports", {
+      id: (0, import_pg_core.uuid)("id").primaryKey().defaultRandom(),
+      strataId: (0, import_pg_core.uuid)("strata_id").notNull(),
+      reportType: (0, import_pg_core.varchar)("report_type").notNull(),
       // 'financial', 'meeting-minutes', 'communications', 'maintenance', 'home-sale-package'
-      title: varchar("title").notNull(),
-      dateRange: jsonb("date_range"),
+      title: (0, import_pg_core.varchar)("title").notNull(),
+      dateRange: (0, import_pg_core.jsonb)("date_range"),
       // { start: string, end: string }
-      filters: jsonb("filters"),
+      filters: (0, import_pg_core.jsonb)("filters"),
       // Additional filters specific to report type
-      content: jsonb("content"),
+      content: (0, import_pg_core.jsonb)("content"),
       // Generated report content
-      format: varchar("format").default("pdf"),
+      format: (0, import_pg_core.varchar)("format").default("pdf"),
       // 'pdf', 'excel', 'html'
-      status: varchar("status").default("pending"),
+      status: (0, import_pg_core.varchar)("status").default("pending"),
       // 'pending', 'generating', 'completed', 'failed'
-      generatedBy: varchar("generated_by").notNull(),
-      generatedAt: timestamp("generated_at").defaultNow(),
-      downloadUrl: varchar("download_url"),
-      emailedTo: text("emailed_to").array(),
+      generatedBy: (0, import_pg_core.varchar)("generated_by").notNull(),
+      generatedAt: (0, import_pg_core.timestamp)("generated_at").defaultNow(),
+      downloadUrl: (0, import_pg_core.varchar)("download_url"),
+      emailedTo: (0, import_pg_core.text)("emailed_to").array(),
       // Array of email addresses
-      createdAt: timestamp("created_at").defaultNow()
+      createdAt: (0, import_pg_core.timestamp)("created_at").defaultNow()
     });
-    reportsRelations = relations(reports, ({ one }) => ({
+    reportsRelations = (0, import_drizzle_orm.relations)(reports, ({ one }) => ({
       strata: one(strata, {
         fields: [reports.strataId],
         references: [strata.id]
@@ -1006,34 +1017,34 @@ var init_schema = __esm({
         references: [users.id]
       })
     }));
-    insertStrataSchema = createInsertSchema(strata).omit({
+    insertStrataSchema = (0, import_drizzle_zod.createInsertSchema)(strata).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     });
-    insertUnitSchema = createInsertSchema(units).omit({
+    insertUnitSchema = (0, import_drizzle_zod.createInsertSchema)(units).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     });
-    insertVendorSchema = createInsertSchema(vendors).omit({
+    insertVendorSchema = (0, import_drizzle_zod.createInsertSchema)(vendors).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     });
-    insertExpenseSchema = createInsertSchema(expenses).omit({
+    insertExpenseSchema = (0, import_drizzle_zod.createInsertSchema)(expenses).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     }).extend({
-      amount: z.union([z.string(), z.number()]).optional().transform((val) => val !== void 0 && val !== null ? String(val) : void 0),
-      expenseDate: z.union([z.string(), z.date()]).optional().transform((val) => {
+      amount: import_zod.z.union([import_zod.z.string(), import_zod.z.number()]).optional().transform((val) => val !== void 0 && val !== null ? String(val) : void 0),
+      expenseDate: import_zod.z.union([import_zod.z.string(), import_zod.z.date()]).optional().transform((val) => {
         if (!val) return void 0;
         if (val instanceof Date) return val;
         return new Date(val);
       })
     });
-    insertQuoteSchema = createInsertSchema(quotes).omit({
+    insertQuoteSchema = (0, import_drizzle_zod.createInsertSchema)(quotes).omit({
       id: true,
       submittedAt: true,
       reviewedAt: true,
@@ -1045,53 +1056,53 @@ var init_schema = __esm({
       createdAt: true,
       updatedAt: true
     }).extend({
-      validUntil: z.string().optional().transform((val) => val ? new Date(val) : void 0),
-      startDate: z.string().optional().transform((val) => val ? new Date(val) : void 0),
-      estimatedCompletion: z.string().optional().transform((val) => val ? new Date(val) : void 0)
+      validUntil: import_zod.z.string().optional().transform((val) => val ? new Date(val) : void 0),
+      startDate: import_zod.z.string().optional().transform((val) => val ? new Date(val) : void 0),
+      estimatedCompletion: import_zod.z.string().optional().transform((val) => val ? new Date(val) : void 0)
     });
-    insertMeetingSchema = createInsertSchema(meetings).omit({
+    insertMeetingSchema = (0, import_drizzle_zod.createInsertSchema)(meetings).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     });
-    insertMaintenanceRequestSchema = createInsertSchema(maintenanceRequests).omit({
+    insertMaintenanceRequestSchema = (0, import_drizzle_zod.createInsertSchema)(maintenanceRequests).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     });
-    insertMaintenanceProjectSchema = createInsertSchema(maintenanceProjects).omit({
+    insertMaintenanceProjectSchema = (0, import_drizzle_zod.createInsertSchema)(maintenanceProjects).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     });
-    insertAnnouncementSchema = createInsertSchema(announcements).omit({
+    insertAnnouncementSchema = (0, import_drizzle_zod.createInsertSchema)(announcements).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     });
-    insertUserStrataAccessSchema = createInsertSchema(userStrataAccess).omit({
+    insertUserStrataAccessSchema = (0, import_drizzle_zod.createInsertSchema)(userStrataAccess).omit({
       id: true,
       createdAt: true
     });
-    insertVendorContractSchema = createInsertSchema(vendorContracts).omit({
+    insertVendorContractSchema = (0, import_drizzle_zod.createInsertSchema)(vendorContracts).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     });
-    insertVendorHistorySchema = createInsertSchema(vendorHistory).omit({
+    insertVendorHistorySchema = (0, import_drizzle_zod.createInsertSchema)(vendorHistory).omit({
       id: true,
       createdAt: true
     });
-    insertFundSchema = createInsertSchema(funds).omit({
+    insertFundSchema = (0, import_drizzle_zod.createInsertSchema)(funds).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     });
-    insertFundTransactionSchema = createInsertSchema(fundTransactions).omit({
+    insertFundTransactionSchema = (0, import_drizzle_zod.createInsertSchema)(fundTransactions).omit({
       id: true,
       createdAt: true
     });
-    insertPendingStrataRegistrationSchema = createInsertSchema(pendingStrataRegistrations).omit({
+    insertPendingStrataRegistrationSchema = (0, import_drizzle_zod.createInsertSchema)(pendingStrataRegistrations).omit({
       id: true,
       status: true,
       approvedBy: true,
@@ -1101,27 +1112,27 @@ var init_schema = __esm({
       createdAt: true,
       updatedAt: true
     });
-    insertDocumentFolderSchema = createInsertSchema(documentFolders).omit({
+    insertDocumentFolderSchema = (0, import_drizzle_zod.createInsertSchema)(documentFolders).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     });
-    insertDocumentSchema = createInsertSchema(documents).omit({
+    insertDocumentSchema = (0, import_drizzle_zod.createInsertSchema)(documents).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     });
-    insertMessageSchema = createInsertSchema(messages).omit({
+    insertMessageSchema = (0, import_drizzle_zod.createInsertSchema)(messages).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     });
-    insertResidentDirectorySchema = createInsertSchema(residentDirectory).omit({
+    insertResidentDirectorySchema = (0, import_drizzle_zod.createInsertSchema)(residentDirectory).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     });
-    insertPaymentReminderSchema = createInsertSchema(paymentReminders).omit({
+    insertPaymentReminderSchema = (0, import_drizzle_zod.createInsertSchema)(paymentReminders).omit({
       id: true,
       remindersSentCount: true,
       lastSentDate: true,
@@ -1129,38 +1140,38 @@ var init_schema = __esm({
       createdAt: true,
       updatedAt: true
     }).extend({
-      unitId: z.string().optional().transform((val) => {
+      unitId: import_zod.z.string().optional().transform((val) => {
         if (!val || val === "" || val === "all") return void 0;
         return val;
       }),
-      amount: z.union([z.string(), z.number()]).optional().transform((val) => val !== void 0 && val !== null ? String(val) : void 0),
-      dueDate: z.string().optional().transform((val) => val ? new Date(val) : void 0),
-      recurringEndDate: z.string().optional().transform((val) => val ? new Date(val) : void 0),
-      weeklyDays: z.array(z.string()).optional()
+      amount: import_zod.z.union([import_zod.z.string(), import_zod.z.number()]).optional().transform((val) => val !== void 0 && val !== null ? String(val) : void 0),
+      dueDate: import_zod.z.string().optional().transform((val) => val ? new Date(val) : void 0),
+      recurringEndDate: import_zod.z.string().optional().transform((val) => val ? new Date(val) : void 0),
+      weeklyDays: import_zod.z.array(import_zod.z.string()).optional()
     });
-    insertReportSchema = createInsertSchema(reports).omit({
+    insertReportSchema = (0, import_drizzle_zod.createInsertSchema)(reports).omit({
       id: true,
       createdAt: true,
       generatedAt: true
     });
-    insertNotificationSchema = createInsertSchema(notifications).omit({
+    insertNotificationSchema = (0, import_drizzle_zod.createInsertSchema)(notifications).omit({
       id: true,
       createdAt: true
     });
-    insertDismissedNotificationSchema = createInsertSchema(dismissedNotifications).omit({
+    insertDismissedNotificationSchema = (0, import_drizzle_zod.createInsertSchema)(dismissedNotifications).omit({
       id: true,
       dismissedAt: true
     });
-    insertMeetingInviteeSchema = createInsertSchema(meetingInvitees).omit({
+    insertMeetingInviteeSchema = (0, import_drizzle_zod.createInsertSchema)(meetingInvitees).omit({
       id: true,
       createdAt: true
     });
-    insertFeeTierSchema = createInsertSchema(feeTiers).omit({
+    insertFeeTierSchema = (0, import_drizzle_zod.createInsertSchema)(feeTiers).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     });
-    insertRepairRequestSchema = createInsertSchema(repairRequests).omit({
+    insertRepairRequestSchema = (0, import_drizzle_zod.createInsertSchema)(repairRequests).omit({
       id: true,
       createdAt: true,
       updatedAt: true
@@ -1169,21 +1180,21 @@ var init_schema = __esm({
 });
 
 // server/db.ts
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-serverless";
-import ws from "ws";
-var pool, db;
+var import_serverless, import_neon_serverless, import_ws, pool, db;
 var init_db = __esm({
   "server/db.ts"() {
     "use strict";
+    import_serverless = require("@neondatabase/serverless");
+    import_neon_serverless = require("drizzle-orm/neon-serverless");
+    import_ws = __toESM(require("ws"), 1);
     init_schema();
-    neonConfig.webSocketConstructor = ws;
+    import_serverless.neonConfig.webSocketConstructor = import_ws.default;
     if (!process.env.DATABASE_URL) {
       throw new Error("DATABASE_URL environment variable is required. Set it in your .env file.");
     }
     console.log("\u{1F4CA} Connecting to PostgreSQL database...");
-    pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    db = drizzle({ client: pool, schema: schema_exports });
+    pool = new import_serverless.Pool({ connectionString: process.env.DATABASE_URL });
+    db = (0, import_neon_serverless.drizzle)({ client: pool, schema: schema_exports });
     console.log("\u2705 PostgreSQL database connected");
   }
 });
@@ -1195,7 +1206,6 @@ __export(email_service_exports, {
   sendMeetingInviteEmails: () => sendMeetingInviteEmails,
   sendNotificationEmail: () => sendNotificationEmail
 });
-import sgMail from "@sendgrid/mail";
 async function sendEmail(emailData) {
   try {
     console.log(`\u{1F4E7} Sending email to: ${emailData.to}`);
@@ -1215,7 +1225,7 @@ async function sendEmail(emailData) {
           openTracking: { enable: true }
         }
       };
-      await sgMail.send(msg);
+      await import_mail.default.send(msg);
       console.log(`\u2705 SendGrid email sent successfully to: ${emailData.to}`);
       return;
     }
@@ -1802,16 +1812,17 @@ function generateNotificationEmailText(data) {
 `;
   return text2;
 }
-var SENDGRID_API_KEY, SENDGRID_FROM_EMAIL, SENDGRID_FROM_NAME, notificationTypeSettings;
+var import_mail, SENDGRID_API_KEY, SENDGRID_FROM_EMAIL, SENDGRID_FROM_NAME, notificationTypeSettings;
 var init_email_service = __esm({
   "server/email-service.ts"() {
     "use strict";
     init_storage_factory();
+    import_mail = __toESM(require("@sendgrid/mail"), 1);
     SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
     SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "noreply@vibestrat.com";
     SENDGRID_FROM_NAME = process.env.SENDGRID_FROM_NAME || "VibeStrat";
     if (SENDGRID_API_KEY) {
-      sgMail.setApiKey(SENDGRID_API_KEY);
+      import_mail.default.setApiKey(SENDGRID_API_KEY);
       console.log("\u2705 SendGrid initialized for email notifications");
     } else {
       console.log("\u26A0\uFE0F SendGrid API key not configured - emails will be logged only");
@@ -1888,26 +1899,26 @@ var init_email_service = __esm({
 });
 
 // server/postgres-storage.ts
-import { eq, and, desc, asc, inArray, ilike, or, sql, count } from "drizzle-orm";
-var PostgresStorage, postgresStorage;
+var import_drizzle_orm2, PostgresStorage, postgresStorage;
 var init_postgres_storage = __esm({
   "server/postgres-storage.ts"() {
     "use strict";
+    import_drizzle_orm2 = require("drizzle-orm");
     init_db();
     init_schema();
     init_email_service();
     PostgresStorage = class {
       // ===== USER OPERATIONS =====
       async getUser(id) {
-        const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+        const result = await db.select().from(users).where((0, import_drizzle_orm2.eq)(users.id, id)).limit(1);
         return result[0] ?? void 0;
       }
       async getUserByEmail(email) {
-        const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+        const result = await db.select().from(users).where((0, import_drizzle_orm2.eq)(users.email, email)).limit(1);
         return result[0] ?? void 0;
       }
       async getUserByResetToken(hashedToken) {
-        const result = await db.select().from(users).where(eq(users.passwordResetToken, hashedToken)).limit(1);
+        const result = await db.select().from(users).where((0, import_drizzle_orm2.eq)(users.passwordResetToken, hashedToken)).limit(1);
         return result[0] ?? void 0;
       }
       async createUser(userData) {
@@ -1922,28 +1933,28 @@ var init_postgres_storage = __esm({
         return user;
       }
       async updateUser(id, userData) {
-        const [updated] = await db.update(users).set({ ...userData, updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, id)).returning();
+        const [updated] = await db.update(users).set({ ...userData, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(users.id, id)).returning();
         if (!updated) throw new Error("User not found after update");
         return updated;
       }
       async deleteUser(id) {
-        await db.delete(users).where(eq(users.id, id));
+        await db.delete(users).where((0, import_drizzle_orm2.eq)(users.id, id));
       }
       async getAllUsers() {
         return await db.select().from(users);
       }
       async setMustChangePassword(email) {
-        await db.update(users).set({ mustChangePassword: true, updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.email, email));
+        await db.update(users).set({ mustChangePassword: true, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(users.email, email));
       }
       async getUsersByStrata(strataId) {
-        const accessRecords = await db.select().from(userStrataAccess).where(eq(userStrataAccess.strataId, strataId));
+        const accessRecords = await db.select().from(userStrataAccess).where((0, import_drizzle_orm2.eq)(userStrataAccess.strataId, strataId));
         if (accessRecords.length === 0) return [];
         const userIds = accessRecords.map((a) => a.userId);
-        return await db.select().from(users).where(inArray(users.id, userIds));
+        return await db.select().from(users).where((0, import_drizzle_orm2.inArray)(users.id, userIds));
       }
       // ===== STRATA OPERATIONS =====
       async getStrata(id) {
-        const result = await db.select().from(strata).where(eq(strata.id, id)).limit(1);
+        const result = await db.select().from(strata).where((0, import_drizzle_orm2.eq)(strata.id, id)).limit(1);
         return result[0] ?? void 0;
       }
       async getAllStrata() {
@@ -1959,37 +1970,37 @@ var init_postgres_storage = __esm({
         return created;
       }
       async updateStrata(id, strataData) {
-        const [updated] = await db.update(strata).set({ ...strataData, updatedAt: /* @__PURE__ */ new Date() }).where(eq(strata.id, id)).returning();
+        const [updated] = await db.update(strata).set({ ...strataData, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(strata.id, id)).returning();
         if (!updated) throw new Error("Strata not found after update");
         return updated;
       }
       async deleteStrata(id) {
-        await db.delete(userStrataAccess).where(eq(userStrataAccess.strataId, id));
-        await db.delete(units).where(eq(units.strataId, id));
-        await db.delete(expenses).where(eq(expenses.strataId, id));
-        await db.delete(vendors).where(eq(vendors.strataId, id));
-        await db.delete(quotes).where(eq(quotes.strataId, id));
-        await db.delete(meetings).where(eq(meetings.strataId, id));
-        await db.delete(documents).where(eq(documents.strataId, id));
-        await db.delete(maintenanceRequests).where(eq(maintenanceRequests.strataId, id));
-        await db.delete(announcements).where(eq(announcements.strataId, id));
-        await db.delete(messages).where(eq(messages.strataId, id));
-        await db.delete(notifications).where(eq(notifications.strataId, id));
-        await db.delete(funds).where(eq(funds.strataId, id));
-        await db.delete(paymentReminders).where(eq(paymentReminders.strataId, id));
-        await db.delete(strata).where(eq(strata.id, id));
+        await db.delete(userStrataAccess).where((0, import_drizzle_orm2.eq)(userStrataAccess.strataId, id));
+        await db.delete(units).where((0, import_drizzle_orm2.eq)(units.strataId, id));
+        await db.delete(expenses).where((0, import_drizzle_orm2.eq)(expenses.strataId, id));
+        await db.delete(vendors).where((0, import_drizzle_orm2.eq)(vendors.strataId, id));
+        await db.delete(quotes).where((0, import_drizzle_orm2.eq)(quotes.strataId, id));
+        await db.delete(meetings).where((0, import_drizzle_orm2.eq)(meetings.strataId, id));
+        await db.delete(documents).where((0, import_drizzle_orm2.eq)(documents.strataId, id));
+        await db.delete(maintenanceRequests).where((0, import_drizzle_orm2.eq)(maintenanceRequests.strataId, id));
+        await db.delete(announcements).where((0, import_drizzle_orm2.eq)(announcements.strataId, id));
+        await db.delete(messages).where((0, import_drizzle_orm2.eq)(messages.strataId, id));
+        await db.delete(notifications).where((0, import_drizzle_orm2.eq)(notifications.strataId, id));
+        await db.delete(funds).where((0, import_drizzle_orm2.eq)(funds.strataId, id));
+        await db.delete(paymentReminders).where((0, import_drizzle_orm2.eq)(paymentReminders.strataId, id));
+        await db.delete(strata).where((0, import_drizzle_orm2.eq)(strata.id, id));
       }
       async getUserStrata(userId) {
-        const accessRecords = await db.select().from(userStrataAccess).where(eq(userStrataAccess.userId, userId));
+        const accessRecords = await db.select().from(userStrataAccess).where((0, import_drizzle_orm2.eq)(userStrataAccess.userId, userId));
         if (accessRecords.length === 0) return [];
         const strataIds = accessRecords.map((a) => a.strataId);
-        return await db.select().from(strata).where(inArray(strata.id, strataIds));
+        return await db.select().from(strata).where((0, import_drizzle_orm2.inArray)(strata.id, strataIds));
       }
       // ===== USER STRATA ACCESS OPERATIONS =====
       async getUserStrataAccess(userId, strataId) {
-        const result = await db.select().from(userStrataAccess).where(and(
-          eq(userStrataAccess.userId, userId),
-          eq(userStrataAccess.strataId, strataId)
+        const result = await db.select().from(userStrataAccess).where((0, import_drizzle_orm2.and)(
+          (0, import_drizzle_orm2.eq)(userStrataAccess.userId, userId),
+          (0, import_drizzle_orm2.eq)(userStrataAccess.strataId, strataId)
         )).limit(1);
         return result[0] ?? void 0;
       }
@@ -2001,17 +2012,17 @@ var init_postgres_storage = __esm({
         return created;
       }
       async deleteUserStrataAccess(accessId) {
-        await db.delete(userStrataAccess).where(eq(userStrataAccess.id, accessId));
+        await db.delete(userStrataAccess).where((0, import_drizzle_orm2.eq)(userStrataAccess.id, accessId));
       }
       async updateUserStrataRole(userId, strataId, role) {
-        const [updated] = await db.update(userStrataAccess).set({ role }).where(and(
-          eq(userStrataAccess.userId, userId),
-          eq(userStrataAccess.strataId, strataId)
+        const [updated] = await db.update(userStrataAccess).set({ role }).where((0, import_drizzle_orm2.and)(
+          (0, import_drizzle_orm2.eq)(userStrataAccess.userId, userId),
+          (0, import_drizzle_orm2.eq)(userStrataAccess.strataId, strataId)
         )).returning();
         return updated ?? void 0;
       }
       async getStrataUsers(strataId) {
-        const accessRecords = await db.select().from(userStrataAccess).where(eq(userStrataAccess.strataId, strataId));
+        const accessRecords = await db.select().from(userStrataAccess).where((0, import_drizzle_orm2.eq)(userStrataAccess.strataId, strataId));
         const results = [];
         for (const access of accessRecords) {
           const user = await this.getUser(access.userId);
@@ -2022,7 +2033,7 @@ var init_postgres_storage = __esm({
         return results;
       }
       async getUserStrataAssignments(userId) {
-        const accessRecords = await db.select().from(userStrataAccess).where(eq(userStrataAccess.userId, userId));
+        const accessRecords = await db.select().from(userStrataAccess).where((0, import_drizzle_orm2.eq)(userStrataAccess.userId, userId));
         const assignments = [];
         for (const access of accessRecords) {
           const strataDoc = await this.getStrata(access.strataId);
@@ -2047,7 +2058,7 @@ var init_postgres_storage = __esm({
         return adminRoles.includes(userAccess.role);
       }
       async updateUserStrataAccess(accessId, updateData) {
-        const [updated] = await db.update(userStrataAccess).set(updateData).where(eq(userStrataAccess.id, accessId)).returning();
+        const [updated] = await db.update(userStrataAccess).set(updateData).where((0, import_drizzle_orm2.eq)(userStrataAccess.id, accessId)).returning();
         if (!updated) throw new Error("User strata access not found after update");
         return updated;
       }
@@ -2062,19 +2073,19 @@ var init_postgres_storage = __esm({
         return unit;
       }
       async getStrataUnits(strataId) {
-        return await db.select().from(units).where(eq(units.strataId, strataId)).orderBy(asc(units.unitNumber));
+        return await db.select().from(units).where((0, import_drizzle_orm2.eq)(units.strataId, strataId)).orderBy((0, import_drizzle_orm2.asc)(units.unitNumber));
       }
       async updateUnit(unitId, updates) {
-        const [updated] = await db.update(units).set({ ...updates, updatedAt: /* @__PURE__ */ new Date() }).where(eq(units.id, unitId)).returning();
+        const [updated] = await db.update(units).set({ ...updates, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(units.id, unitId)).returning();
         if (!updated) throw new Error("Unit not found");
         return updated;
       }
       async deleteUnit(unitId) {
-        await db.delete(units).where(eq(units.id, unitId));
+        await db.delete(units).where((0, import_drizzle_orm2.eq)(units.id, unitId));
       }
       // ===== EXPENSE OPERATIONS =====
       async getStrataExpenses(strataId) {
-        return await db.select().from(expenses).where(eq(expenses.strataId, strataId)).orderBy(desc(expenses.createdAt));
+        return await db.select().from(expenses).where((0, import_drizzle_orm2.eq)(expenses.strataId, strataId)).orderBy((0, import_drizzle_orm2.desc)(expenses.createdAt));
       }
       async createExpense(expenseData) {
         const now = /* @__PURE__ */ new Date();
@@ -2086,20 +2097,20 @@ var init_postgres_storage = __esm({
         return expense;
       }
       async updateExpense(expenseId, updateData) {
-        const [updated] = await db.update(expenses).set({ ...updateData, updatedAt: /* @__PURE__ */ new Date() }).where(eq(expenses.id, expenseId)).returning();
+        const [updated] = await db.update(expenses).set({ ...updateData, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(expenses.id, expenseId)).returning();
         if (!updated) throw new Error("Expense not found after update");
         return updated;
       }
       async deleteExpense(expenseId) {
-        await db.delete(expenses).where(eq(expenses.id, expenseId));
+        await db.delete(expenses).where((0, import_drizzle_orm2.eq)(expenses.id, expenseId));
       }
       // ===== VENDOR OPERATIONS =====
       async getVendor(id) {
-        const result = await db.select().from(vendors).where(eq(vendors.id, id)).limit(1);
+        const result = await db.select().from(vendors).where((0, import_drizzle_orm2.eq)(vendors.id, id)).limit(1);
         return result[0] ?? void 0;
       }
       async getVendorsByStrata(strataId) {
-        return await db.select().from(vendors).where(eq(vendors.strataId, strataId));
+        return await db.select().from(vendors).where((0, import_drizzle_orm2.eq)(vendors.strataId, strataId));
       }
       async getAllVendors() {
         return await db.select().from(vendors);
@@ -2114,16 +2125,16 @@ var init_postgres_storage = __esm({
         return vendor;
       }
       async updateVendor(id, vendorData) {
-        const [updated] = await db.update(vendors).set({ ...vendorData, updatedAt: /* @__PURE__ */ new Date() }).where(eq(vendors.id, id)).returning();
+        const [updated] = await db.update(vendors).set({ ...vendorData, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(vendors.id, id)).returning();
         if (!updated) throw new Error("Vendor not found after update");
         return updated;
       }
       async deleteVendor(id) {
-        await db.delete(vendors).where(eq(vendors.id, id));
+        await db.delete(vendors).where((0, import_drizzle_orm2.eq)(vendors.id, id));
       }
       // ===== VENDOR CONTRACT OPERATIONS =====
       async getVendorContracts(vendorId) {
-        return await db.select().from(vendorContracts).where(eq(vendorContracts.vendorId, vendorId)).orderBy(desc(vendorContracts.createdAt));
+        return await db.select().from(vendorContracts).where((0, import_drizzle_orm2.eq)(vendorContracts.vendorId, vendorId)).orderBy((0, import_drizzle_orm2.desc)(vendorContracts.createdAt));
       }
       async createVendorContract(contractData) {
         const now = /* @__PURE__ */ new Date();
@@ -2135,16 +2146,16 @@ var init_postgres_storage = __esm({
         return contract;
       }
       async updateVendorContract(contractId, updateData) {
-        const [updated] = await db.update(vendorContracts).set({ ...updateData, updatedAt: /* @__PURE__ */ new Date() }).where(eq(vendorContracts.id, contractId)).returning();
+        const [updated] = await db.update(vendorContracts).set({ ...updateData, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(vendorContracts.id, contractId)).returning();
         if (!updated) throw new Error("Vendor contract not found after update");
         return updated;
       }
       async deleteVendorContract(contractId) {
-        await db.delete(vendorContracts).where(eq(vendorContracts.id, contractId));
+        await db.delete(vendorContracts).where((0, import_drizzle_orm2.eq)(vendorContracts.id, contractId));
       }
       // ===== VENDOR HISTORY OPERATIONS =====
       async getVendorHistory(vendorId) {
-        return await db.select().from(vendorHistory).where(eq(vendorHistory.vendorId, vendorId)).orderBy(desc(vendorHistory.createdAt));
+        return await db.select().from(vendorHistory).where((0, import_drizzle_orm2.eq)(vendorHistory.vendorId, vendorId)).orderBy((0, import_drizzle_orm2.desc)(vendorHistory.createdAt));
       }
       async createVendorHistory(historyData) {
         const now = /* @__PURE__ */ new Date();
@@ -2155,16 +2166,16 @@ var init_postgres_storage = __esm({
         return history;
       }
       async updateVendorHistory(historyId, updateData) {
-        const [updated] = await db.update(vendorHistory).set(updateData).where(eq(vendorHistory.id, historyId)).returning();
+        const [updated] = await db.update(vendorHistory).set(updateData).where((0, import_drizzle_orm2.eq)(vendorHistory.id, historyId)).returning();
         if (!updated) throw new Error("Vendor history not found after update");
         return updated;
       }
       async deleteVendorHistory(historyId) {
-        await db.delete(vendorHistory).where(eq(vendorHistory.id, historyId));
+        await db.delete(vendorHistory).where((0, import_drizzle_orm2.eq)(vendorHistory.id, historyId));
       }
       // ===== QUOTE OPERATIONS =====
       async getStrataQuotes(strataId) {
-        return await db.select().from(quotes).where(eq(quotes.strataId, strataId));
+        return await db.select().from(quotes).where((0, import_drizzle_orm2.eq)(quotes.strataId, strataId));
       }
       async createQuote(quoteData) {
         const now = /* @__PURE__ */ new Date();
@@ -2176,7 +2187,7 @@ var init_postgres_storage = __esm({
         return quote;
       }
       async updateQuote(quoteId, updateData) {
-        const [updated] = await db.update(quotes).set({ ...updateData, updatedAt: /* @__PURE__ */ new Date() }).where(eq(quotes.id, quoteId)).returning();
+        const [updated] = await db.update(quotes).set({ ...updateData, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(quotes.id, quoteId)).returning();
         if (!updated) throw new Error("Quote not found after update");
         return updated;
       }
@@ -2196,7 +2207,7 @@ var init_postgres_storage = __esm({
       }
       // ===== FEE TIER OPERATIONS =====
       async getStrataFeeTiers(strataId) {
-        return await db.select().from(feeTiers).where(eq(feeTiers.strataId, strataId)).orderBy(asc(feeTiers.monthlyAmount));
+        return await db.select().from(feeTiers).where((0, import_drizzle_orm2.eq)(feeTiers.strataId, strataId)).orderBy((0, import_drizzle_orm2.asc)(feeTiers.monthlyAmount));
       }
       async createFeeTier(feeTierData) {
         const now = /* @__PURE__ */ new Date();
@@ -2208,22 +2219,22 @@ var init_postgres_storage = __esm({
         return tier;
       }
       async updateFeeTier(feeTierId, updates) {
-        const [updated] = await db.update(feeTiers).set({ ...updates, updatedAt: /* @__PURE__ */ new Date() }).where(eq(feeTiers.id, feeTierId)).returning();
+        const [updated] = await db.update(feeTiers).set({ ...updates, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(feeTiers.id, feeTierId)).returning();
         if (!updated) throw new Error("Fee tier not found");
         return updated;
       }
       async deleteFeeTier(feeTierId) {
-        await db.delete(feeTiers).where(eq(feeTiers.id, feeTierId));
+        await db.delete(feeTiers).where((0, import_drizzle_orm2.eq)(feeTiers.id, feeTierId));
       }
       // ===== DOCUMENT FOLDER OPERATIONS =====
       async getStrataDocumentFolders(strataId, parentFolderId) {
-        const conditions = [eq(documentFolders.strataId, strataId)];
+        const conditions = [(0, import_drizzle_orm2.eq)(documentFolders.strataId, strataId)];
         if (parentFolderId) {
-          conditions.push(eq(documentFolders.parentFolderId, parentFolderId));
+          conditions.push((0, import_drizzle_orm2.eq)(documentFolders.parentFolderId, parentFolderId));
         } else {
-          conditions.push(sql`${documentFolders.parentFolderId} IS NULL`);
+          conditions.push(import_drizzle_orm2.sql`${documentFolders.parentFolderId} IS NULL`);
         }
-        return await db.select().from(documentFolders).where(and(...conditions)).orderBy(asc(documentFolders.name));
+        return await db.select().from(documentFolders).where((0, import_drizzle_orm2.and)(...conditions)).orderBy((0, import_drizzle_orm2.asc)(documentFolders.name));
       }
       async createDocumentFolder(folderData) {
         const now = /* @__PURE__ */ new Date();
@@ -2236,40 +2247,40 @@ var init_postgres_storage = __esm({
         return folder;
       }
       async updateDocumentFolder(folderId, updates) {
-        const [updated] = await db.update(documentFolders).set({ ...updates, updatedAt: /* @__PURE__ */ new Date() }).where(eq(documentFolders.id, folderId)).returning();
+        const [updated] = await db.update(documentFolders).set({ ...updates, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(documentFolders.id, folderId)).returning();
         if (!updated) throw new Error("Document folder not found");
         return updated;
       }
       async deleteDocumentFolder(folderId) {
-        await db.delete(documentFolders).where(eq(documentFolders.id, folderId));
+        await db.delete(documentFolders).where((0, import_drizzle_orm2.eq)(documentFolders.id, folderId));
       }
       async getDocumentFolder(folderId) {
-        const result = await db.select().from(documentFolders).where(eq(documentFolders.id, folderId)).limit(1);
+        const result = await db.select().from(documentFolders).where((0, import_drizzle_orm2.eq)(documentFolders.id, folderId)).limit(1);
         if (!result[0]) throw new Error("Document folder not found");
         return result[0];
       }
       async searchDocumentFolders(strataId, searchTerm) {
-        return await db.select().from(documentFolders).where(and(
-          eq(documentFolders.strataId, strataId),
-          or(
-            ilike(documentFolders.name, `%${searchTerm}%`),
-            ilike(documentFolders.description, `%${searchTerm}%`)
+        return await db.select().from(documentFolders).where((0, import_drizzle_orm2.and)(
+          (0, import_drizzle_orm2.eq)(documentFolders.strataId, strataId),
+          (0, import_drizzle_orm2.or)(
+            (0, import_drizzle_orm2.ilike)(documentFolders.name, `%${searchTerm}%`),
+            (0, import_drizzle_orm2.ilike)(documentFolders.description, `%${searchTerm}%`)
           )
         ));
       }
       // ===== DOCUMENT OPERATIONS =====
       async getStrataDocuments(strataId) {
-        return await db.select().from(documents).where(eq(documents.strataId, strataId)).orderBy(desc(documents.createdAt));
+        return await db.select().from(documents).where((0, import_drizzle_orm2.eq)(documents.strataId, strataId)).orderBy((0, import_drizzle_orm2.desc)(documents.createdAt));
       }
       async getFolderDocuments(folderId) {
-        return await db.select().from(documents).where(eq(documents.folderId, folderId)).orderBy(desc(documents.createdAt));
+        return await db.select().from(documents).where((0, import_drizzle_orm2.eq)(documents.folderId, folderId)).orderBy((0, import_drizzle_orm2.desc)(documents.createdAt));
       }
       async searchDocuments(strataId, searchTerm) {
-        return await db.select().from(documents).where(and(
-          eq(documents.strataId, strataId),
-          or(
-            ilike(documents.title, `%${searchTerm}%`),
-            ilike(documents.description, `%${searchTerm}%`)
+        return await db.select().from(documents).where((0, import_drizzle_orm2.and)(
+          (0, import_drizzle_orm2.eq)(documents.strataId, strataId),
+          (0, import_drizzle_orm2.or)(
+            (0, import_drizzle_orm2.ilike)(documents.title, `%${searchTerm}%`),
+            (0, import_drizzle_orm2.ilike)(documents.description, `%${searchTerm}%`)
           )
         ));
       }
@@ -2283,19 +2294,19 @@ var init_postgres_storage = __esm({
         return doc;
       }
       async updateDocument(documentId, updates) {
-        const [updated] = await db.update(documents).set({ ...updates, updatedAt: /* @__PURE__ */ new Date() }).where(eq(documents.id, documentId)).returning();
+        const [updated] = await db.update(documents).set({ ...updates, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(documents.id, documentId)).returning();
         if (!updated) throw new Error("Document not found");
         return updated;
       }
       async deleteDocument(documentId) {
-        await db.delete(documents).where(eq(documents.id, documentId));
+        await db.delete(documents).where((0, import_drizzle_orm2.eq)(documents.id, documentId));
       }
       // ===== MESSAGE OPERATIONS =====
       async getStrataMessages(strataId, userId) {
-        return await db.select().from(messages).where(eq(messages.strataId, strataId)).orderBy(desc(messages.createdAt));
+        return await db.select().from(messages).where((0, import_drizzle_orm2.eq)(messages.strataId, strataId)).orderBy((0, import_drizzle_orm2.desc)(messages.createdAt));
       }
       async getMessagesByStrata(strataId) {
-        return await db.select().from(messages).where(eq(messages.strataId, strataId)).orderBy(desc(messages.createdAt));
+        return await db.select().from(messages).where((0, import_drizzle_orm2.eq)(messages.strataId, strataId)).orderBy((0, import_drizzle_orm2.desc)(messages.createdAt));
       }
       async createMessage(messageData) {
         const now = /* @__PURE__ */ new Date();
@@ -2310,32 +2321,32 @@ var init_postgres_storage = __esm({
         return message;
       }
       async deleteConversation(conversationId, userId) {
-        await db.delete(messages).where(and(
-          or(
-            eq(messages.id, conversationId),
-            eq(messages.conversationId, conversationId),
-            eq(messages.parentMessageId, conversationId)
+        await db.delete(messages).where((0, import_drizzle_orm2.and)(
+          (0, import_drizzle_orm2.or)(
+            (0, import_drizzle_orm2.eq)(messages.id, conversationId),
+            (0, import_drizzle_orm2.eq)(messages.conversationId, conversationId),
+            (0, import_drizzle_orm2.eq)(messages.parentMessageId, conversationId)
           ),
-          or(
-            eq(messages.senderId, userId),
-            eq(messages.recipientId, userId)
+          (0, import_drizzle_orm2.or)(
+            (0, import_drizzle_orm2.eq)(messages.senderId, userId),
+            (0, import_drizzle_orm2.eq)(messages.recipientId, userId)
           )
         ));
       }
       async markMessageAsRead(messageId, userId) {
-        const result = await db.select().from(messages).where(eq(messages.id, messageId)).limit(1);
+        const result = await db.select().from(messages).where((0, import_drizzle_orm2.eq)(messages.id, messageId)).limit(1);
         if (!result[0]) throw new Error(`Message ${messageId} not found`);
         if (result[0].recipientId !== userId) {
           throw new Error(`User ${userId} is not authorized to mark this message as read`);
         }
-        await db.update(messages).set({ isRead: true, readAt: /* @__PURE__ */ new Date(), updatedAt: /* @__PURE__ */ new Date() }).where(eq(messages.id, messageId));
+        await db.update(messages).set({ isRead: true, readAt: /* @__PURE__ */ new Date(), updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(messages.id, messageId));
       }
       // ===== ANNOUNCEMENT OPERATIONS =====
       async getStrataAnnouncements(strataId) {
-        return await db.select().from(announcements).where(eq(announcements.strataId, strataId)).orderBy(desc(announcements.createdAt));
+        return await db.select().from(announcements).where((0, import_drizzle_orm2.eq)(announcements.strataId, strataId)).orderBy((0, import_drizzle_orm2.desc)(announcements.createdAt));
       }
       async getAnnouncement(announcementId) {
-        const result = await db.select().from(announcements).where(eq(announcements.id, announcementId)).limit(1);
+        const result = await db.select().from(announcements).where((0, import_drizzle_orm2.eq)(announcements.id, announcementId)).limit(1);
         return result[0] ?? null;
       }
       async createAnnouncement(data) {
@@ -2348,25 +2359,25 @@ var init_postgres_storage = __esm({
         return announcement;
       }
       async updateAnnouncement(announcementId, data) {
-        const [updated] = await db.update(announcements).set({ ...data, updatedAt: /* @__PURE__ */ new Date() }).where(eq(announcements.id, announcementId)).returning();
+        const [updated] = await db.update(announcements).set({ ...data, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(announcements.id, announcementId)).returning();
         if (!updated) throw new Error("Announcement not found");
         return updated;
       }
       async deleteAnnouncement(announcementId) {
-        await db.delete(announcements).where(eq(announcements.id, announcementId));
+        await db.delete(announcements).where((0, import_drizzle_orm2.eq)(announcements.id, announcementId));
       }
       async markAnnouncementAsRead(announcementId, userId) {
-        const result = await db.select().from(announcements).where(eq(announcements.id, announcementId)).limit(1);
+        const result = await db.select().from(announcements).where((0, import_drizzle_orm2.eq)(announcements.id, announcementId)).limit(1);
         if (!result[0]) throw new Error("Announcement not found");
-        const [updated] = await db.update(announcements).set({ updatedAt: /* @__PURE__ */ new Date() }).where(eq(announcements.id, announcementId)).returning();
+        const [updated] = await db.update(announcements).set({ updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(announcements.id, announcementId)).returning();
         return updated;
       }
       // ===== NOTIFICATION OPERATIONS =====
       async getDismissedNotifications(strataId, userId) {
-        return await db.select().from(notifications).where(and(
-          eq(notifications.strataId, strataId),
-          eq(notifications.userId, userId),
-          eq(notifications.isRead, true)
+        return await db.select().from(notifications).where((0, import_drizzle_orm2.and)(
+          (0, import_drizzle_orm2.eq)(notifications.strataId, strataId),
+          (0, import_drizzle_orm2.eq)(notifications.userId, userId),
+          (0, import_drizzle_orm2.eq)(notifications.isRead, true)
         ));
       }
       async createNotification(notificationData) {
@@ -2401,18 +2412,18 @@ var init_postgres_storage = __esm({
         }
       }
       async getUserNotifications(userId, strataId) {
-        const conditions = [eq(notifications.userId, userId)];
+        const conditions = [(0, import_drizzle_orm2.eq)(notifications.userId, userId)];
         if (strataId) {
-          conditions.push(eq(notifications.strataId, strataId));
+          conditions.push((0, import_drizzle_orm2.eq)(notifications.strataId, strataId));
         }
-        return await db.select().from(notifications).where(and(...conditions)).orderBy(desc(notifications.createdAt)).limit(20);
+        return await db.select().from(notifications).where((0, import_drizzle_orm2.and)(...conditions)).orderBy((0, import_drizzle_orm2.desc)(notifications.createdAt)).limit(20);
       }
       async markNotificationAsRead(notificationId) {
-        await db.update(notifications).set({ isRead: true }).where(eq(notifications.id, notificationId));
+        await db.update(notifications).set({ isRead: true }).where((0, import_drizzle_orm2.eq)(notifications.id, notificationId));
         return { success: true, message: "Notification marked as read" };
       }
       async getUserDismissedNotifications(userId) {
-        return await db.select().from(dismissedNotifications).where(eq(dismissedNotifications.userId, userId));
+        return await db.select().from(dismissedNotifications).where((0, import_drizzle_orm2.eq)(dismissedNotifications.userId, userId));
       }
       async dismissNotification(notificationData) {
         const [dismissed] = await db.insert(dismissedNotifications).values({
@@ -2425,7 +2436,7 @@ var init_postgres_storage = __esm({
       }
       // ===== MEETING OPERATIONS =====
       async getStrataMeetings(strataId) {
-        return await db.select().from(meetings).where(eq(meetings.strataId, strataId)).orderBy(desc(meetings.scheduledAt));
+        return await db.select().from(meetings).where((0, import_drizzle_orm2.eq)(meetings.strataId, strataId)).orderBy((0, import_drizzle_orm2.desc)(meetings.scheduledAt));
       }
       async createMeeting(meetingData) {
         const now = /* @__PURE__ */ new Date();
@@ -2437,20 +2448,20 @@ var init_postgres_storage = __esm({
         return meeting;
       }
       async getMeeting(meetingId) {
-        const result = await db.select().from(meetings).where(eq(meetings.id, meetingId)).limit(1);
+        const result = await db.select().from(meetings).where((0, import_drizzle_orm2.eq)(meetings.id, meetingId)).limit(1);
         return result[0] ?? void 0;
       }
       async updateMeeting(meetingId, updates) {
-        const [updated] = await db.update(meetings).set({ ...updates, updatedAt: /* @__PURE__ */ new Date() }).where(eq(meetings.id, meetingId)).returning();
+        const [updated] = await db.update(meetings).set({ ...updates, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(meetings.id, meetingId)).returning();
         if (!updated) throw new Error("Meeting not found");
         return updated;
       }
       async deleteMeeting(meetingId) {
-        await db.delete(meetings).where(eq(meetings.id, meetingId));
+        await db.delete(meetings).where((0, import_drizzle_orm2.eq)(meetings.id, meetingId));
       }
       // ===== MAINTENANCE REQUEST OPERATIONS =====
       async getStrataMaintenanceRequests(strataId) {
-        return await db.select().from(maintenanceRequests).where(eq(maintenanceRequests.strataId, strataId));
+        return await db.select().from(maintenanceRequests).where((0, import_drizzle_orm2.eq)(maintenanceRequests.strataId, strataId));
       }
       async createMaintenanceRequest(requestData) {
         const now = /* @__PURE__ */ new Date();
@@ -2462,7 +2473,7 @@ var init_postgres_storage = __esm({
         return request;
       }
       async updateMaintenanceRequest(requestId, updateData) {
-        const [updated] = await db.update(maintenanceRequests).set({ ...updateData, updatedAt: /* @__PURE__ */ new Date() }).where(eq(maintenanceRequests.id, requestId)).returning();
+        const [updated] = await db.update(maintenanceRequests).set({ ...updateData, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(maintenanceRequests.id, requestId)).returning();
         if (!updated) throw new Error("Maintenance request not found after update");
         return updated;
       }
@@ -2477,29 +2488,29 @@ var init_postgres_storage = __esm({
         return project;
       }
       async updateMaintenanceProject(projectId, updateData) {
-        const [updated] = await db.update(maintenanceProjects).set({ ...updateData, updatedAt: /* @__PURE__ */ new Date() }).where(eq(maintenanceProjects.id, projectId)).returning();
+        const [updated] = await db.update(maintenanceProjects).set({ ...updateData, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(maintenanceProjects.id, projectId)).returning();
         if (!updated) throw new Error("Maintenance project not found after update");
         return updated;
       }
       async deleteMaintenanceProject(projectId) {
-        await db.delete(maintenanceProjects).where(eq(maintenanceProjects.id, projectId));
+        await db.delete(maintenanceProjects).where((0, import_drizzle_orm2.eq)(maintenanceProjects.id, projectId));
       }
       // ===== REPAIR REQUEST OPERATIONS =====
       async getRepairRequests(strataId, filters) {
-        const conditions = [eq(repairRequests.strataId, strataId)];
+        const conditions = [(0, import_drizzle_orm2.eq)(repairRequests.strataId, strataId)];
         if (filters?.status) {
-          conditions.push(eq(repairRequests.status, filters.status));
+          conditions.push((0, import_drizzle_orm2.eq)(repairRequests.status, filters.status));
         }
         if (filters?.severity) {
-          conditions.push(eq(repairRequests.severity, filters.severity));
+          conditions.push((0, import_drizzle_orm2.eq)(repairRequests.severity, filters.severity));
         }
         if (filters?.area) {
-          conditions.push(eq(repairRequests.area, filters.area));
+          conditions.push((0, import_drizzle_orm2.eq)(repairRequests.area, filters.area));
         }
-        return await db.select().from(repairRequests).where(and(...conditions)).orderBy(desc(repairRequests.createdAt));
+        return await db.select().from(repairRequests).where((0, import_drizzle_orm2.and)(...conditions)).orderBy((0, import_drizzle_orm2.desc)(repairRequests.createdAt));
       }
       async getRepairRequest(id) {
-        const result = await db.select().from(repairRequests).where(eq(repairRequests.id, id)).limit(1);
+        const result = await db.select().from(repairRequests).where((0, import_drizzle_orm2.eq)(repairRequests.id, id)).limit(1);
         return result[0] ?? null;
       }
       async createRepairRequest(requestData) {
@@ -2532,15 +2543,15 @@ var init_postgres_storage = __esm({
           ...updates,
           statusHistory,
           updatedAt: /* @__PURE__ */ new Date()
-        }).where(eq(repairRequests.id, id)).returning();
+        }).where((0, import_drizzle_orm2.eq)(repairRequests.id, id)).returning();
         if (!updated) throw new Error("Repair request not found after update");
         return updated;
       }
       async deleteRepairRequest(id) {
-        await db.delete(repairRequests).where(eq(repairRequests.id, id));
+        await db.delete(repairRequests).where((0, import_drizzle_orm2.eq)(repairRequests.id, id));
       }
       async getRepairRequestStats(strataId) {
-        const requests = await db.select().from(repairRequests).where(eq(repairRequests.strataId, strataId));
+        const requests = await db.select().from(repairRequests).where((0, import_drizzle_orm2.eq)(repairRequests.strataId, strataId));
         return {
           total: requests.length,
           suggested: requests.filter((r) => r.status === "suggested").length,
@@ -2558,7 +2569,7 @@ var init_postgres_storage = __esm({
       }
       // ===== FUND OPERATIONS =====
       async getStrataFunds(strataId) {
-        return await db.select().from(funds).where(eq(funds.strataId, strataId)).orderBy(desc(funds.createdAt));
+        return await db.select().from(funds).where((0, import_drizzle_orm2.eq)(funds.strataId, strataId)).orderBy((0, import_drizzle_orm2.desc)(funds.createdAt));
       }
       async createFund(data) {
         const now = /* @__PURE__ */ new Date();
@@ -2570,12 +2581,12 @@ var init_postgres_storage = __esm({
         return fund;
       }
       async updateFund(fundId, data) {
-        const [updated] = await db.update(funds).set({ ...data, updatedAt: /* @__PURE__ */ new Date() }).where(eq(funds.id, fundId)).returning();
+        const [updated] = await db.update(funds).set({ ...data, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(funds.id, fundId)).returning();
         if (!updated) throw new Error("Fund not found");
         return updated;
       }
       async deleteFund(fundId) {
-        await db.delete(funds).where(eq(funds.id, fundId));
+        await db.delete(funds).where((0, import_drizzle_orm2.eq)(funds.id, fundId));
       }
       async createFundTransaction(data) {
         const now = /* @__PURE__ */ new Date();
@@ -2587,7 +2598,7 @@ var init_postgres_storage = __esm({
       }
       // ===== PAYMENT REMINDER OPERATIONS =====
       async getStrataPaymentReminders(strataId) {
-        return await db.select().from(paymentReminders).where(eq(paymentReminders.strataId, strataId)).orderBy(desc(paymentReminders.createdAt));
+        return await db.select().from(paymentReminders).where((0, import_drizzle_orm2.eq)(paymentReminders.strataId, strataId)).orderBy((0, import_drizzle_orm2.desc)(paymentReminders.createdAt));
       }
       async createPaymentReminder(reminderData) {
         const now = /* @__PURE__ */ new Date();
@@ -2599,16 +2610,16 @@ var init_postgres_storage = __esm({
         return reminder;
       }
       async updatePaymentReminder(reminderId, updateData) {
-        const [updated] = await db.update(paymentReminders).set({ ...updateData, updatedAt: /* @__PURE__ */ new Date() }).where(eq(paymentReminders.id, reminderId)).returning();
+        const [updated] = await db.update(paymentReminders).set({ ...updateData, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(paymentReminders.id, reminderId)).returning();
         if (!updated) throw new Error("Payment reminder not found after update");
         return updated;
       }
       async deletePaymentReminder(reminderId) {
-        await db.delete(paymentReminders).where(eq(paymentReminders.id, reminderId));
+        await db.delete(paymentReminders).where((0, import_drizzle_orm2.eq)(paymentReminders.id, reminderId));
       }
       // ===== REPORT OPERATIONS =====
       async getStrataReports(strataId) {
-        return await db.select().from(reports).where(eq(reports.strataId, strataId)).orderBy(desc(reports.createdAt));
+        return await db.select().from(reports).where((0, import_drizzle_orm2.eq)(reports.strataId, strataId)).orderBy((0, import_drizzle_orm2.desc)(reports.createdAt));
       }
       async createReport(reportData) {
         const now = /* @__PURE__ */ new Date();
@@ -2620,26 +2631,26 @@ var init_postgres_storage = __esm({
         return report;
       }
       async getReport(reportId) {
-        const result = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
+        const result = await db.select().from(reports).where((0, import_drizzle_orm2.eq)(reports.id, reportId)).limit(1);
         return result[0] ?? null;
       }
       async updateReport(reportId, updates) {
-        const [updated] = await db.update(reports).set(updates).where(eq(reports.id, reportId)).returning();
+        const [updated] = await db.update(reports).set(updates).where((0, import_drizzle_orm2.eq)(reports.id, reportId)).returning();
         if (!updated) throw new Error("Report not found");
         return updated;
       }
       async deleteReport(reportId) {
-        await db.delete(reports).where(eq(reports.id, reportId));
+        await db.delete(reports).where((0, import_drizzle_orm2.eq)(reports.id, reportId));
       }
       async generateFinancialReport(strataId, dateRange) {
         const startDate = new Date(dateRange.start);
         const endDate = new Date(dateRange.end);
-        const expenses2 = await db.select().from(expenses).where(eq(expenses.strataId, strataId));
+        const expenses2 = await db.select().from(expenses).where((0, import_drizzle_orm2.eq)(expenses.strataId, strataId));
         const filteredExpenses = expenses2.filter((e) => {
           const d = e.createdAt ? new Date(e.createdAt) : /* @__PURE__ */ new Date(0);
           return d >= startDate && d <= endDate;
         });
-        const funds2 = await db.select().from(funds).where(eq(funds.strataId, strataId));
+        const funds2 = await db.select().from(funds).where((0, import_drizzle_orm2.eq)(funds.strataId, strataId));
         const totalExpenses = filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount || "0"), 0);
         const totalFunds = funds2.reduce((sum, f) => sum + parseFloat(f.balance || "0"), 0);
         return {
@@ -2662,7 +2673,7 @@ var init_postgres_storage = __esm({
         };
       }
       async generateMeetingMinutesReport(strataId, dateRange) {
-        let meetings2 = await db.select().from(meetings).where(eq(meetings.strataId, strataId));
+        let meetings2 = await db.select().from(meetings).where((0, import_drizzle_orm2.eq)(meetings.strataId, strataId));
         if (dateRange) {
           const startDate = new Date(dateRange.start);
           const endDate = new Date(dateRange.end);
@@ -2694,8 +2705,8 @@ var init_postgres_storage = __esm({
         };
       }
       async generateCommunicationsReport(strataId, dateRange) {
-        let announcementsList = await db.select().from(announcements).where(eq(announcements.strataId, strataId));
-        let messagesList = await db.select().from(messages).where(eq(messages.strataId, strataId));
+        let announcementsList = await db.select().from(announcements).where((0, import_drizzle_orm2.eq)(announcements.strataId, strataId));
+        let messagesList = await db.select().from(messages).where((0, import_drizzle_orm2.eq)(messages.strataId, strataId));
         if (dateRange) {
           const startDate = new Date(dateRange.start);
           const endDate = new Date(dateRange.end);
@@ -2729,7 +2740,7 @@ var init_postgres_storage = __esm({
         };
       }
       async generateMaintenanceReport(strataId, dateRange) {
-        let requests = await db.select().from(maintenanceRequests).where(eq(maintenanceRequests.strataId, strataId));
+        let requests = await db.select().from(maintenanceRequests).where((0, import_drizzle_orm2.eq)(maintenanceRequests.strataId, strataId));
         if (dateRange) {
           const startDate = new Date(dateRange.start);
           const endDate = new Date(dateRange.end);
@@ -2762,9 +2773,9 @@ var init_postgres_storage = __esm({
         };
       }
       async generateHomeSalePackage(strataId) {
-        const expenses2 = await db.select().from(expenses).where(eq(expenses.strataId, strataId));
-        const meetings2 = await db.select().from(meetings).where(eq(meetings.strataId, strataId));
-        const docs = await db.select().from(documents).where(eq(documents.strataId, strataId));
+        const expenses2 = await db.select().from(expenses).where((0, import_drizzle_orm2.eq)(expenses.strataId, strataId));
+        const meetings2 = await db.select().from(meetings).where((0, import_drizzle_orm2.eq)(meetings.strataId, strataId));
+        const docs = await db.select().from(documents).where((0, import_drizzle_orm2.eq)(documents.strataId, strataId));
         return {
           generatedDate: (/* @__PURE__ */ new Date()).toISOString(),
           summary: {
@@ -2792,7 +2803,7 @@ var init_postgres_storage = __esm({
       }
       // ===== RESIDENT DIRECTORY OPERATIONS =====
       async getStrataResidentDirectory(strataId) {
-        return await db.select().from(residentDirectory).where(eq(residentDirectory.strataId, strataId));
+        return await db.select().from(residentDirectory).where((0, import_drizzle_orm2.eq)(residentDirectory.strataId, strataId));
       }
       async createResidentDirectoryEntry(entryData) {
         const now = /* @__PURE__ */ new Date();
@@ -2804,7 +2815,7 @@ var init_postgres_storage = __esm({
         return entry;
       }
       async updateResidentDirectoryEntry(id, updates) {
-        const [updated] = await db.update(residentDirectory).set({ ...updates, updatedAt: /* @__PURE__ */ new Date() }).where(eq(residentDirectory.id, id)).returning();
+        const [updated] = await db.update(residentDirectory).set({ ...updates, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(residentDirectory.id, id)).returning();
         if (!updated) throw new Error("Resident directory entry not found");
         return updated;
       }
@@ -2822,18 +2833,18 @@ var init_postgres_storage = __esm({
       async getStrataMetrics(strataId) {
         try {
           const [unitsResult, pendingExpenses, pendingMaintenance, pendingQuotes] = await Promise.all([
-            db.select({ count: count() }).from(units).where(eq(units.strataId, strataId)),
-            db.select({ count: count() }).from(expenses).where(and(
-              eq(expenses.strataId, strataId),
-              eq(expenses.status, "pending")
+            db.select({ count: (0, import_drizzle_orm2.count)() }).from(units).where((0, import_drizzle_orm2.eq)(units.strataId, strataId)),
+            db.select({ count: (0, import_drizzle_orm2.count)() }).from(expenses).where((0, import_drizzle_orm2.and)(
+              (0, import_drizzle_orm2.eq)(expenses.strataId, strataId),
+              (0, import_drizzle_orm2.eq)(expenses.status, "pending")
             )),
-            db.select({ count: count() }).from(maintenanceRequests).where(and(
-              eq(maintenanceRequests.strataId, strataId),
-              inArray(maintenanceRequests.status, ["open", "in_progress"])
+            db.select({ count: (0, import_drizzle_orm2.count)() }).from(maintenanceRequests).where((0, import_drizzle_orm2.and)(
+              (0, import_drizzle_orm2.eq)(maintenanceRequests.strataId, strataId),
+              (0, import_drizzle_orm2.inArray)(maintenanceRequests.status, ["open", "in_progress"])
             )),
-            db.select({ count: count() }).from(quotes).where(and(
-              eq(quotes.strataId, strataId),
-              eq(quotes.status, "pending")
+            db.select({ count: (0, import_drizzle_orm2.count)() }).from(quotes).where((0, import_drizzle_orm2.and)(
+              (0, import_drizzle_orm2.eq)(quotes.strataId, strataId),
+              (0, import_drizzle_orm2.eq)(quotes.status, "pending")
             ))
           ]);
           const paymentReminders2 = await this.getStrataPaymentReminders(strataId);
@@ -2866,17 +2877,17 @@ var init_postgres_storage = __esm({
       }
       async getPendingApprovals(strataId) {
         const [pendingExpenses, pendingMaintenance, pendingQuotes] = await Promise.all([
-          db.select().from(expenses).where(and(
-            eq(expenses.strataId, strataId),
-            eq(expenses.status, "pending")
+          db.select().from(expenses).where((0, import_drizzle_orm2.and)(
+            (0, import_drizzle_orm2.eq)(expenses.strataId, strataId),
+            (0, import_drizzle_orm2.eq)(expenses.status, "pending")
           )),
-          db.select().from(maintenanceRequests).where(and(
-            eq(maintenanceRequests.strataId, strataId),
-            eq(maintenanceRequests.status, "pending")
+          db.select().from(maintenanceRequests).where((0, import_drizzle_orm2.and)(
+            (0, import_drizzle_orm2.eq)(maintenanceRequests.strataId, strataId),
+            (0, import_drizzle_orm2.eq)(maintenanceRequests.status, "pending")
           )),
-          db.select().from(quotes).where(and(
-            eq(quotes.strataId, strataId),
-            eq(quotes.status, "pending")
+          db.select().from(quotes).where((0, import_drizzle_orm2.and)(
+            (0, import_drizzle_orm2.eq)(quotes.strataId, strataId),
+            (0, import_drizzle_orm2.eq)(quotes.status, "pending")
           ))
         ]);
         return [
@@ -2908,12 +2919,6 @@ __export(openai_exports, {
   generateMeetingMinutes: () => generateMeetingMinutes,
   transcribeAudio: () => transcribeAudio
 });
-import Anthropic from "@anthropic-ai/sdk";
-import OpenAI from "openai";
-import * as fs from "fs";
-import * as path from "path";
-import { exec } from "child_process";
-import { promisify } from "util";
 async function transcribeAudio(audioBuffer, filename) {
   if (!openai) {
     throw new Error("OpenAI API is not configured. Audio transcription requires OpenAI Whisper. Please add OPENAI_API_KEY to your .env file, or use manual note-taking.");
@@ -3245,23 +3250,29 @@ ${text2}`
     throw new Error("Failed to analyze text with AI");
   }
 }
-var fromPath, execAsync, anthropic, openai;
+var import_sdk, import_openai, fs, path, import_child_process, import_util, fromPath, execAsync, anthropic, openai;
 var init_openai = __esm({
   "server/openai.ts"() {
     "use strict";
+    import_sdk = __toESM(require("@anthropic-ai/sdk"), 1);
+    import_openai = __toESM(require("openai"), 1);
+    fs = __toESM(require("fs"), 1);
+    path = __toESM(require("path"), 1);
+    import_child_process = require("child_process");
+    import_util = require("util");
     fromPath = null;
-    execAsync = promisify(exec);
+    execAsync = (0, import_util.promisify)(import_child_process.exec);
     anthropic = null;
     if (process.env.ANTHROPIC_API_KEY) {
       console.log("\u{1F916} Claude API (Anthropic) configured");
-      anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+      anthropic = new import_sdk.default({ apiKey: process.env.ANTHROPIC_API_KEY });
     } else {
       console.log("\u2139\uFE0F  Claude API not configured - AI features will be disabled");
     }
     openai = null;
     if (process.env.OPENAI_API_KEY) {
       console.log("\u{1F3A4} OpenAI Whisper configured for audio transcription");
-      openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      openai = new import_openai.default({ apiKey: process.env.OPENAI_API_KEY });
     }
   }
 });
@@ -3271,10 +3282,6 @@ var pdf_generator_exports = {};
 __export(pdf_generator_exports, {
   generateReportPDF: () => generateReportPDF
 });
-import PDFDocument from "pdfkit";
-import { ChartJSNodeCanvas } from "chartjs-node-canvas";
-import path2 from "path";
-import fs2 from "fs";
 function formatDate(date) {
   try {
     if (!date) return "N/A";
@@ -3380,7 +3387,7 @@ function addHeader(doc, reportData) {
   const pageWidth = doc.page.width;
   const margin = 50;
   try {
-    if (fs2.existsSync(logoPath)) {
+    if (import_fs.default.existsSync(logoPath)) {
       doc.image(logoPath, margin, margin - 10, { height: 50 });
     } else {
       doc.fontSize(18).font("Helvetica-Bold").fillColor(COLORS.primary).text("VibeStrat", margin, margin);
@@ -3515,7 +3522,7 @@ async function generateReportPDF(reportData) {
     const chunks = [];
     let doc;
     try {
-      doc = new PDFDocument({
+      doc = new import_pdfkit.default({
         margin: 50,
         size: "LETTER",
         bufferPages: true
@@ -3992,11 +3999,15 @@ async function renderHomeSalePackage(doc, content) {
     doc.fontSize(11).font("Helvetica").text("Current financial statements included", margin + 20, doc.y);
   }
 }
-var logoPath, COLORS, chartWidth, chartHeight, chartJSNodeCanvas;
+var import_pdfkit, import_chartjs_node_canvas, import_path, import_fs, logoPath, COLORS, chartWidth, chartHeight, chartJSNodeCanvas;
 var init_pdf_generator = __esm({
   "server/pdf-generator.ts"() {
     "use strict";
-    logoPath = path2.join(process.cwd(), "server", "assets", "logo.png");
+    import_pdfkit = __toESM(require("pdfkit"), 1);
+    import_chartjs_node_canvas = require("chartjs-node-canvas");
+    import_path = __toESM(require("path"), 1);
+    import_fs = __toESM(require("fs"), 1);
+    logoPath = import_path.default.join(process.cwd(), "server", "assets", "logo.png");
     COLORS = {
       primary: "#1a2332",
       // Dark Navy Blue
@@ -4019,7 +4030,7 @@ var init_pdf_generator = __esm({
     };
     chartWidth = 500;
     chartHeight = 300;
-    chartJSNodeCanvas = new ChartJSNodeCanvas({
+    chartJSNodeCanvas = new import_chartjs_node_canvas.ChartJSNodeCanvas({
       width: chartWidth,
       height: chartHeight,
       backgroundColour: "white"
@@ -4028,24 +4039,29 @@ var init_pdf_generator = __esm({
 });
 
 // api/_index.src.ts
-import express2 from "express";
-import cors from "cors";
+var index_src_exports = {};
+__export(index_src_exports, {
+  default: () => handler
+});
+module.exports = __toCommonJS(index_src_exports);
+var import_express2 = __toESM(require("express"));
+var import_cors = __toESM(require("cors"));
 
 // server/routes.ts
+var import_http = require("http");
 init_storage_factory();
-import { createServer } from "http";
 
 // server/jwt-auth.ts
+var import_jsonwebtoken = __toESM(require("jsonwebtoken"), 1);
 init_storage_factory();
-import jwt from "jsonwebtoken";
 var JWT_SECRET = process.env.JWT_SECRET || "dev-jwt-secret-change-in-production";
 var JWT_EXPIRY = "7d";
 var MASTER_ADMIN_EMAIL = process.env.MASTER_ADMIN_EMAIL || "rfinnbogason@gmail.com";
 function generateToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
+  return import_jsonwebtoken.default.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 }
 function verifyToken(token) {
-  return jwt.verify(token, JWT_SECRET);
+  return import_jsonwebtoken.default.verify(token, JWT_SECRET);
 }
 var authenticateJwt = async (req, res, next) => {
   try {
@@ -4071,9 +4087,9 @@ var authenticateJwt = async (req, res, next) => {
 };
 
 // server/auth-routes.ts
+var import_bcryptjs = __toESM(require("bcryptjs"), 1);
+var import_crypto = __toESM(require("crypto"), 1);
 init_storage_factory();
-import bcrypt from "bcryptjs";
-import crypto2 from "crypto";
 var APP_URL = process.env.APP_URL || "http://localhost:5000";
 function registerAuthRoutes(app2) {
   app2.post("/api/auth/login", async (req, res) => {
@@ -4095,7 +4111,7 @@ function registerAuthRoutes(app2) {
           message: "We've upgraded our system. Please reset your password to continue."
         });
       }
-      const validPassword = await bcrypt.compare(password, user.passwordHash);
+      const validPassword = await import_bcryptjs.default.compare(password, user.passwordHash);
       if (!validPassword) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
@@ -4144,8 +4160,8 @@ function registerAuthRoutes(app2) {
       if (existingUser) {
         return res.status(409).json({ message: "An account with this email already exists" });
       }
-      const passwordHash = await bcrypt.hash(password, 12);
-      const userId = crypto2.randomUUID();
+      const passwordHash = await import_bcryptjs.default.hash(password, 12);
+      const userId = import_crypto.default.randomUUID();
       const user = await storage.createUser({
         id: userId,
         email: email.toLowerCase().trim(),
@@ -4181,8 +4197,8 @@ function registerAuthRoutes(app2) {
       }
       const user = await storage.getUserByEmail(email.toLowerCase().trim());
       if (user) {
-        const resetToken = crypto2.randomBytes(32).toString("hex");
-        const hashedToken = crypto2.createHash("sha256").update(resetToken).digest("hex");
+        const resetToken = import_crypto.default.randomBytes(32).toString("hex");
+        const hashedToken = import_crypto.default.createHash("sha256").update(resetToken).digest("hex");
         const expires = new Date(Date.now() + 60 * 60 * 1e3);
         await storage.updateUser(user.id, {
           passwordResetToken: hashedToken,
@@ -4229,12 +4245,12 @@ function registerAuthRoutes(app2) {
       if (newPassword.length < 6) {
         return res.status(400).json({ message: "Password must be at least 6 characters" });
       }
-      const hashedToken = crypto2.createHash("sha256").update(token).digest("hex");
+      const hashedToken = import_crypto.default.createHash("sha256").update(token).digest("hex");
       const user = await storage.getUserByResetToken(hashedToken);
       if (!user || !user.passwordResetExpires || new Date(user.passwordResetExpires) < /* @__PURE__ */ new Date()) {
         return res.status(400).json({ message: "Invalid or expired reset token" });
       }
-      const passwordHash = await bcrypt.hash(newPassword, 12);
+      const passwordHash = await import_bcryptjs.default.hash(newPassword, 12);
       await storage.updateUser(user.id, {
         passwordHash,
         passwordResetToken: null,
@@ -4258,12 +4274,12 @@ function registerAuthRoutes(app2) {
       }
       const user = req.user;
       if (user.passwordHash && currentPassword) {
-        const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+        const valid = await import_bcryptjs.default.compare(currentPassword, user.passwordHash);
         if (!valid) {
           return res.status(401).json({ message: "Current password is incorrect" });
         }
       }
-      const passwordHash = await bcrypt.hash(newPassword, 12);
+      const passwordHash = await import_bcryptjs.default.hash(newPassword, 12);
       await storage.updateUser(user.id, {
         passwordHash,
         mustChangePassword: false
@@ -4295,9 +4311,9 @@ function registerAuthRoutes(app2) {
 }
 
 // server/vercel-blob-storage.ts
-import { put, del } from "@vercel/blob";
+var import_blob = require("@vercel/blob");
 async function uploadFile(buffer, filename, contentType) {
-  const blob = await put(filename, buffer, {
+  const blob = await (0, import_blob.put)(filename, buffer, {
     access: "public",
     contentType
   });
@@ -4337,20 +4353,20 @@ var PushNotificationService = class {
 var pushNotificationService = new PushNotificationService();
 
 // server/routes.ts
+var import_bcryptjs2 = __toESM(require("bcryptjs"), 1);
+var import_multer = __toESM(require("multer"), 1);
 init_openai();
-import bcrypt2 from "bcryptjs";
-import multer from "multer";
 
 // server/stripe-routes.ts
-import express from "express";
+var import_express = __toESM(require("express"), 1);
 
 // server/stripe-config.ts
-import Stripe from "stripe";
+var import_stripe = __toESM(require("stripe"), 1);
 var stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecretKey) {
   console.warn("\u26A0\uFE0F  STRIPE_SECRET_KEY not configured - Payment features will be disabled");
 }
-var stripe = stripeSecretKey ? new Stripe(stripeSecretKey, {
+var stripe = stripeSecretKey ? new import_stripe.default(stripeSecretKey, {
   apiVersion: "2024-11-20.acacia"
 }) : null;
 var STRIPE_CONFIG = {
@@ -4388,7 +4404,7 @@ function getStripePriceId(tier) {
 
 // server/stripe-routes.ts
 init_storage_factory();
-var router = express.Router();
+var router = import_express.default.Router();
 var authenticateStripeRequest = authenticateJwt;
 router.post("/create-checkout-session", authenticateStripeRequest, async (req, res) => {
   try {
@@ -4549,7 +4565,7 @@ router.get("/subscription/:strataId", authenticateStripeRequest, async (req, res
     res.status(500).json({ error: error.message || "Failed to fetch subscription" });
   }
 });
-router.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+router.post("/webhook", import_express.default.raw({ type: "application/json" }), async (req, res) => {
   try {
     if (!stripe) {
       return res.status(503).send("Stripe is not configured");
@@ -4886,10 +4902,10 @@ router.post("/create-setup-intent", authenticateStripeRequest, async (req, res) 
 var stripe_routes_default = router;
 
 // server/routes.ts
+var import_express_rate_limit = __toESM(require("express-rate-limit"), 1);
 init_schema();
-import rateLimit from "express-rate-limit";
-var upload = multer({
-  storage: multer.memoryStorage(),
+var upload = (0, import_multer.default)({
+  storage: import_multer.default.memoryStorage(),
   limits: {
     fileSize: 50 * 1024 * 1024,
     // 50MB limit
@@ -4921,7 +4937,7 @@ var upload = multer({
   }
 });
 var MASTER_ADMIN_EMAIL2 = process.env.MASTER_ADMIN_EMAIL || "rfinnbogason@gmail.com";
-var generalLimiter = rateLimit({
+var generalLimiter = (0, import_express_rate_limit.default)({
   windowMs: 15 * 60 * 1e3,
   // 15 minutes
   max: 100,
@@ -4930,7 +4946,7 @@ var generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false
 });
-var authLimiter = rateLimit({
+var authLimiter = (0, import_express_rate_limit.default)({
   windowMs: 15 * 60 * 1e3,
   // 15 minutes
   max: 5,
@@ -4939,7 +4955,7 @@ var authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false
 });
-var apiLimiter = rateLimit({
+var apiLimiter = (0, import_express_rate_limit.default)({
   windowMs: 1 * 60 * 1e3,
   // 1 minute
   max: 60,
@@ -5140,7 +5156,7 @@ async function registerRoutes(app2) {
       if (user.passwordHash) {
         return res.status(400).json({ message: "Password already set" });
       }
-      const passwordHash = await bcrypt2.hash(password, 10);
+      const passwordHash = await import_bcryptjs2.default.hash(password, 10);
       await storage.updateUser(user.id, { passwordHash });
       res.json({ message: "Password set successfully" });
     } catch (error) {
@@ -5158,7 +5174,7 @@ async function registerRoutes(app2) {
       if (!user || !user.passwordHash) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
-      const isValidPassword = await bcrypt2.compare(password, user.passwordHash);
+      const isValidPassword = await import_bcryptjs2.default.compare(password, user.passwordHash);
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
@@ -6524,7 +6540,7 @@ async function registerRoutes(app2) {
       const { email, firstName, lastName, role, temporaryPassword, strataId } = req.body;
       let user = await storage.getUserByEmail(email);
       if (!user) {
-        const hashedPassword = await bcrypt2.hash(temporaryPassword, 10);
+        const hashedPassword = await import_bcryptjs2.default.hash(temporaryPassword, 10);
         user = await storage.createUser({
           email,
           firstName,
@@ -6607,7 +6623,7 @@ async function registerRoutes(app2) {
       if (!hasAccess) {
         return res.status(403).json({ message: "Forbidden: Admin access required for this strata" });
       }
-      const hashedPassword = await bcrypt2.hash(userData.temporaryPassword, 10);
+      const hashedPassword = await import_bcryptjs2.default.hash(userData.temporaryPassword, 10);
       const newUser = await storage.createUser({
         email: userData.email,
         firstName: userData.firstName,
@@ -7477,7 +7493,7 @@ async function registerRoutes(app2) {
       if (existingUser) {
         return res.status(400).json({ message: "User with this email already exists" });
       }
-      const passwordHash = await bcrypt2.hash(temporaryPassword, 12);
+      const passwordHash = await import_bcryptjs2.default.hash(temporaryPassword, 12);
       const user = await storage.createUser({
         email,
         firstName: firstName || null,
@@ -7510,7 +7526,7 @@ async function registerRoutes(app2) {
         updatedAt: /* @__PURE__ */ new Date()
       };
       if (resetPassword && newPassword) {
-        updateData.passwordHash = await bcrypt2.hash(newPassword, 10);
+        updateData.passwordHash = await import_bcryptjs2.default.hash(newPassword, 10);
       }
       const user = await storage.updateUser(userId, updateData);
       if (!user) {
@@ -8007,7 +8023,7 @@ async function registerRoutes(app2) {
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      const passwordHash = await bcrypt2.hash(newPassword, 12);
+      const passwordHash = await import_bcryptjs2.default.hash(newPassword, 12);
       await storage.updateUser(user.id, { passwordHash, mustChangePassword: true });
       res.json({ message: "Password reset successfully", email });
     } catch (error) {
@@ -8532,12 +8548,12 @@ Original notes: ${repairRequest.additionalNotes}` : ""),
         return res.status(400).json({ message: "New password must be at least 6 characters long" });
       }
       if (user.passwordHash && currentPassword) {
-        const valid = await bcrypt2.compare(currentPassword, user.passwordHash);
+        const valid = await import_bcryptjs2.default.compare(currentPassword, user.passwordHash);
         if (!valid) {
           return res.status(401).json({ message: "Current password is incorrect" });
         }
       }
-      const passwordHash = await bcrypt2.hash(newPassword, 12);
+      const passwordHash = await import_bcryptjs2.default.hash(newPassword, 12);
       await storage.updateUser(user.id, { passwordHash, mustChangePassword: false });
       res.json({ message: "Password changed successfully" });
     } catch (error) {
@@ -8646,14 +8662,14 @@ Original notes: ${repairRequest.additionalNotes}` : ""),
       res.status(500).json({ message: "Failed to create test notification" });
     }
   });
-  const httpServer = createServer(app2);
+  const httpServer = (0, import_http.createServer)(app2);
   return httpServer;
 }
 
 // api/_index.src.ts
-var app = express2();
+var app = (0, import_express2.default)();
 var allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : ["http://localhost:5000", "http://localhost:3000"];
-app.use(cors({
+app.use((0, import_cors.default)({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith(".vercel.app") || process.env.NODE_ENV === "development") {
@@ -8670,7 +8686,7 @@ app.use((req, res, next) => {
   if (req.path.includes("/documents") && req.method === "POST") {
     return next();
   }
-  express2.json({ limit: "50mb" })(req, res, (err) => {
+  import_express2.default.json({ limit: "50mb" })(req, res, (err) => {
     if (err) return res.status(400).json({ message: "Invalid JSON" });
     next();
   });
@@ -8679,7 +8695,7 @@ app.use((req, res, next) => {
   if (req.path.includes("/documents") && req.method === "POST") {
     return next();
   }
-  express2.urlencoded({ extended: false, limit: "50mb" })(req, res, (err) => {
+  import_express2.default.urlencoded({ extended: false, limit: "50mb" })(req, res, (err) => {
     if (err) return res.status(400).json({ message: "Invalid form data" });
     next();
   });
@@ -8696,6 +8712,3 @@ async function handler(req, res) {
   await initPromise;
   return app(req, res);
 }
-export {
-  handler as default
-};
