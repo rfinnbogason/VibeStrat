@@ -569,17 +569,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       console.log(`📋 Creating unit for strata ${id}:`, req.body);
-      
+
       const unitData = insertUnitSchema.parse({
         ...req.body,
         strataId: id
       });
-      
+
       console.log(`✅ Validated unit data:`, unitData);
-      
+
       const unit = await storage.createUnit(unitData);
       console.log(`🎉 Successfully created unit:`, unit);
-      
+
+      // If ownerId is provided, update that user's userStrataAccess.unitId
+      if (unitData.ownerId) {
+        const userAccess = await storage.getUserStrataAccess(unitData.ownerId, id);
+        if (userAccess) {
+          await storage.updateUserStrataAccess(userAccess.id, { unitId: unit.id });
+        }
+      }
+
       res.json(unit);
     } catch (error) {
       console.error("❌ Error creating unit:", error);
@@ -593,6 +601,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const unit = await storage.updateUnit(id, req.body);
+
+      // If ownerId changed, update that user's userStrataAccess.unitId
+      if (req.body.ownerId && unit.strataId) {
+        const userAccess = await storage.getUserStrataAccess(req.body.ownerId, unit.strataId);
+        if (userAccess) {
+          await storage.updateUserStrataAccess(userAccess.id, { unitId: unit.id });
+        }
+      }
+
       res.json(unit);
     } catch (error) {
       console.error("Error updating unit:", error);
@@ -2013,8 +2030,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/strata-admin/users', isAuthenticatedUnified, async (req: any, res) => {
     try {
-      const { email, firstName, lastName, role, temporaryPassword, strataId } = req.body;
-      
+      const { email, firstName, lastName, role, temporaryPassword, strataId, unitId } = req.body;
+
       // Create or get existing user
       let user = await storage.getUserByEmail(email);
       if (!user) {
@@ -2029,14 +2046,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           mustChangePassword: true, // Force password change on first login
         });
       }
-      
-      // Add user to strata with role
+
+      // Add user to strata with role and optional unit
       const userAccess = await storage.createUserStrataAccess({
         userId: user.id,
         strataId,
-        role: role || 'resident'
+        role: role || 'resident',
+        ...(unitId ? { unitId } : {}),
       });
-      
+
       res.json({ user, userAccess });
     } catch (error) {
       console.error("Error creating user:", error);
@@ -2138,12 +2156,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: true,
       });
 
-      // Assign user to strata with specified role
+      // Assign user to strata with specified role and optional unit
       await storage.createUserStrataAccess({
         userId: newUser.id,
         strataId: strataId,
         role: userData.role,
         canPostAnnouncements: ['chairperson', 'secretary'].includes(userData.role),
+        ...(userData.unitId ? { unitId: userData.unitId } : {}),
       });
 
       res.json({ message: "User created successfully", user: newUser });
@@ -3548,7 +3567,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isRead: false,
           metadata: {
             messageId: message.id,
-            senderId: userIdToUse,
+            senderId: userId,
             senderName: senderName,
             subject: bodyData.subject || 'New message',
             isGroupChat: isGroupChat
@@ -3585,7 +3604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("❌ Error creating message:", error);
       console.error("❌ Error stack:", error.stack);
-      res.status(500).json({ message: "Failed to create message: " + error.message });
+      res.status(500).json({ message: "Failed to create message [MSG_ROUTE_FIX_2026_02_16]: " + error.message });
     }
   });
 

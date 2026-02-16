@@ -7750,7 +7750,7 @@ async function registerRoutes(app2) {
           isRead: false,
           metadata: {
             messageId: message.id,
-            senderId: userIdToUse,
+            senderId: userId,
             senderName,
             subject: bodyData.subject || "New message",
             isGroupChat
@@ -7780,7 +7780,7 @@ async function registerRoutes(app2) {
     } catch (error) {
       console.error("\u274C Error creating message:", error);
       console.error("\u274C Error stack:", error.stack);
-      res.status(500).json({ message: "Failed to create message: " + error.message });
+      res.status(500).json({ message: "Failed to create message [MSG_ROUTE_FIX_2026_02_16]: " + error.message });
     }
   });
   app2.patch("/api/messages/:id/read", isAuthenticatedUnified, async (req, res) => {
