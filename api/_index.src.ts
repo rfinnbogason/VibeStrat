@@ -49,8 +49,10 @@ app.use((req, res, next) => {
   });
 });
 
-// Register all API routes
-await registerRoutes(app);
+// Register all API routes (wrapped in async init)
+const initPromise = (async () => {
+  await registerRoutes(app);
+})();
 
 // Error handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -59,4 +61,8 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   res.status(status).json({ message });
 });
 
-export default app;
+// Export handler that waits for init
+export default async function handler(req: any, res: any) {
+  await initPromise;
+  return app(req, res);
+}

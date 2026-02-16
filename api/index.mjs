@@ -1171,16 +1171,13 @@ var init_schema = __esm({
 // server/db.ts
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
+import ws from "ws";
 var pool, db;
 var init_db = __esm({
-  async "server/db.ts"() {
+  "server/db.ts"() {
     "use strict";
     init_schema();
-    try {
-      const ws = await import("ws");
-      neonConfig.webSocketConstructor = ws.default;
-    } catch {
-    }
+    neonConfig.webSocketConstructor = ws;
     if (!process.env.DATABASE_URL) {
       throw new Error("DATABASE_URL environment variable is required. Set it in your .env file.");
     }
@@ -1809,7 +1806,7 @@ var SENDGRID_API_KEY, SENDGRID_FROM_EMAIL, SENDGRID_FROM_NAME, notificationTypeS
 var init_email_service = __esm({
   "server/email-service.ts"() {
     "use strict";
-    await init_storage_factory();
+    init_storage_factory();
     SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
     SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "noreply@vibestrat.com";
     SENDGRID_FROM_NAME = process.env.SENDGRID_FROM_NAME || "VibeStrat";
@@ -1894,9 +1891,9 @@ var init_email_service = __esm({
 import { eq, and, desc, asc, inArray, ilike, or, sql, count } from "drizzle-orm";
 var PostgresStorage, postgresStorage;
 var init_postgres_storage = __esm({
-  async "server/postgres-storage.ts"() {
+  "server/postgres-storage.ts"() {
     "use strict";
-    await init_db();
+    init_db();
     init_schema();
     init_email_service();
     PostgresStorage = class {
@@ -2896,9 +2893,9 @@ var init_postgres_storage = __esm({
 // server/storage-factory.ts
 var storage;
 var init_storage_factory = __esm({
-  async "server/storage-factory.ts"() {
+  "server/storage-factory.ts"() {
     "use strict";
-    await init_postgres_storage();
+    init_postgres_storage();
     storage = new PostgresStorage();
   }
 });
@@ -3250,14 +3247,9 @@ ${text2}`
 }
 var fromPath, execAsync, anthropic, openai;
 var init_openai = __esm({
-  async "server/openai.ts"() {
+  "server/openai.ts"() {
     "use strict";
     fromPath = null;
-    try {
-      const pdf2pic = await import("pdf2pic");
-      fromPath = pdf2pic.fromPath;
-    } catch {
-    }
     execAsync = promisify(exec);
     anthropic = null;
     if (process.env.ANTHROPIC_API_KEY) {
@@ -4040,11 +4032,11 @@ import express2 from "express";
 import cors from "cors";
 
 // server/routes.ts
-await init_storage_factory();
+init_storage_factory();
 import { createServer } from "http";
 
 // server/jwt-auth.ts
-await init_storage_factory();
+init_storage_factory();
 import jwt from "jsonwebtoken";
 var JWT_SECRET = process.env.JWT_SECRET || "dev-jwt-secret-change-in-production";
 var JWT_EXPIRY = "7d";
@@ -4079,7 +4071,7 @@ var authenticateJwt = async (req, res, next) => {
 };
 
 // server/auth-routes.ts
-await init_storage_factory();
+init_storage_factory();
 import bcrypt from "bcryptjs";
 import crypto2 from "crypto";
 var APP_URL = process.env.APP_URL || "http://localhost:5000";
@@ -4345,7 +4337,7 @@ var PushNotificationService = class {
 var pushNotificationService = new PushNotificationService();
 
 // server/routes.ts
-await init_openai();
+init_openai();
 import bcrypt2 from "bcryptjs";
 import multer from "multer";
 
@@ -4395,7 +4387,7 @@ function getStripePriceId(tier) {
 }
 
 // server/stripe-routes.ts
-await init_storage_factory();
+init_storage_factory();
 var router = express.Router();
 var authenticateStripeRequest = authenticateJwt;
 router.post("/create-checkout-session", authenticateStripeRequest, async (req, res) => {
@@ -6055,7 +6047,7 @@ async function registerRoutes(app2) {
       console.log("\u{1F4DD} Updating meeting with audio URL...");
       await storage.updateMeeting(meetingId, { audioUrl });
       console.log("\u{1F3AF} Starting audio transcription...");
-      const { transcribeAudio: transcribeAudio2 } = await init_openai().then(() => openai_exports);
+      const { transcribeAudio: transcribeAudio2 } = await Promise.resolve().then(() => (init_openai(), openai_exports));
       const transcription = await transcribeAudio2(req.file.buffer, req.file.originalname);
       console.log("\u2705 Audio transcription completed:", transcription.length, "characters");
       console.log("\u{1F4DD} Updating meeting with transcription...");
@@ -6090,7 +6082,7 @@ async function registerRoutes(app2) {
       if (!meeting.transcription) {
         return res.status(400).json({ message: "No transcription available for this meeting" });
       }
-      const { generateMeetingMinutes: generateMeetingMinutes2 } = await init_openai().then(() => openai_exports);
+      const { generateMeetingMinutes: generateMeetingMinutes2 } = await Promise.resolve().then(() => (init_openai(), openai_exports));
       const minutes = await generateMeetingMinutes2(
         meeting.transcription,
         meeting.title,
@@ -8692,13 +8684,18 @@ app.use((req, res, next) => {
     next();
   });
 });
-await registerRoutes(app);
+var initPromise = (async () => {
+  await registerRoutes(app);
+})();
 app.use((err, _req, res, _next) => {
   const status = err.status || err.statusCode || 500;
   const message = err.message || "Internal Server Error";
   res.status(status).json({ message });
 });
-var index_src_default = app;
+async function handler(req, res) {
+  await initPromise;
+  return app(req, res);
+}
 export {
-  index_src_default as default
+  handler as default
 };

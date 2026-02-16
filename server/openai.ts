@@ -4,13 +4,17 @@ import * as fs from "fs";
 import * as path from "path";
 import { exec } from "child_process";
 import { promisify } from "util";
-// Lazy import pdf2pic - it depends on system libraries not available on Vercel
+// pdf2pic is loaded lazily when needed (requires system libraries)
 let fromPath: any = null;
-try {
-  const pdf2pic = await import("pdf2pic");
-  fromPath = pdf2pic.fromPath;
-} catch {
-  // pdf2pic not available in this environment
+function getFromPath() {
+  if (!fromPath) {
+    try {
+      fromPath = require("pdf2pic").fromPath;
+    } catch {
+      // pdf2pic not available in this environment
+    }
+  }
+  return fromPath;
 }
 
 const execAsync = promisify(exec);
