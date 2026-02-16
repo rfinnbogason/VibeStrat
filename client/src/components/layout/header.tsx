@@ -52,8 +52,8 @@ export default function Header() {
     enabled: !!currentStrata?.id,
   });
 
-  // Fetch Firebase notifications
-  const { data: firebaseNotifications = [] } = useQuery({
+  // Fetch notifications
+  const { data: dbNotifications = [] } = useQuery({
     queryKey: [`/api/strata/${selectedStrataId}/notifications`],
     enabled: !!selectedStrataId,
     staleTime: 0, // Always refetch
@@ -133,15 +133,15 @@ export default function Header() {
     }
   };
 
-  // Mutation to mark Firebase notifications as read
+  // Mutation to mark notifications as read
   const markNotificationAsReadMutation = useMutation({
     mutationFn: async (notificationId: string) => {
-      console.log('Marking Firebase notification as read:', notificationId);
+      console.log('Marking notification as read:', notificationId);
       const response = await apiRequest("PATCH", `/api/notifications/${notificationId}/read`);
       return response.json();
     },
     onSuccess: (data, notificationId) => {
-      console.log('Firebase notification marked as read:', notificationId);
+      console.log('Notification marked as read:', notificationId);
       // Force refetch to update UI immediately
       queryClient.invalidateQueries({ queryKey: [`/api/strata/${selectedStrataId}/notifications`] });
       queryClient.refetchQueries({ queryKey: [`/api/strata/${selectedStrataId}/notifications`] });
@@ -161,13 +161,13 @@ export default function Header() {
       console.log('🔔 Notification clicked:', {
         id: notification.id,
         type: notification.type,
-        isFirebaseNotification: notification.isFirebaseNotification,
+        isDbNotification: notification.isDbNotification,
         metadata: notification.metadata,
         link: notification.link
       });
 
-      // Handle Firebase notifications (meeting invitations, messages, etc.)
-      if (notification.isFirebaseNotification) {
+      // Handle DB notifications (meeting invitations, messages, etc.)
+      if (notification.isDbNotification) {
         await markNotificationAsReadMutation.mutateAsync(notification.id);
 
         if (notification.type === 'meeting_invitation') {
@@ -215,8 +215,8 @@ export default function Header() {
 
   // Generate notifications and filter out dismissed ones
   const allNotifications = [
-    // Firebase notifications (meeting invitations, etc.)
-    ...(firebaseNotifications as any[])
+    // DB notifications (meeting invitations, etc.)
+    ...(dbNotifications as any[])
       .filter(notification => !notification.isRead)
       .map(notification => {
         const mapped = {
@@ -231,10 +231,10 @@ export default function Header() {
           category: notification.type === 'meeting_invitation' ? 'Meeting Invitation' :
                     notification.type === 'message' ? 'New Message' : 'Notification',
           link: notification.type === 'message' ? '/communications' : '/dashboard',
-          isFirebaseNotification: true,
+          isDbNotification: true,
           metadata: notification.metadata,
         };
-        console.log('📬 Mapped Firebase notification:', mapped);
+        console.log('📬 Mapped notification:', mapped);
         return mapped;
       }),
 
@@ -312,7 +312,7 @@ export default function Header() {
     console.log('  ✅ No active notifications');
   }
 
-  // Get current user ID from auth hook (email in our Firebase system)
+  // Get current user ID from auth hook
   const currentUserId = user?.email || 'master-admin';
 
   // Calculate unread message count based on conversations
@@ -427,7 +427,7 @@ export default function Header() {
 
                         // Dismiss all notifications with proper async handling
                         const promises = notifications.map(notification => {
-                          if (notification.isFirebaseNotification) {
+                          if (notification.isDbNotification) {
                             return markNotificationAsReadMutation.mutateAsync(notification.id);
                           } else {
                             return dismissNotificationMutation.mutateAsync({

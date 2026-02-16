@@ -399,8 +399,7 @@ export async function sendMeetingInviteEmails(emailData: MeetingInviteEmailData)
       
       await storage.createNotification(notificationData);
       
-      // Send actual email notification using Firebase's email capability
-      // We'll use Firebase's built-in email service
+      // Send actual email notification
       try {
         await sendEmail({
           to: invitee.email,
@@ -570,7 +569,7 @@ export async function sendNotificationEmail(emailData: NotificationEmailData): P
     // Generate plain text fallback
     const textBody = generateNotificationEmailText(emailData);
 
-    // Send email using Firebase
+    // Send email
     await sendEmail({
       to: emailData.userEmail,
       subject,

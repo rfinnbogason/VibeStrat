@@ -25,7 +25,7 @@ export function registerAuthRoutes(app: Express) {
         return res.status(403).json({ message: "Account is deactivated" });
       }
 
-      // If user has no passwordHash (migrated from Firebase), they must reset
+      // If user has no passwordHash (legacy migrated user), they must reset
       if (!user.passwordHash) {
         return res.status(403).json({
           code: "MUST_RESET_PASSWORD",

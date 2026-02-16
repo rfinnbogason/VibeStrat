@@ -1,5 +1,5 @@
-// Push notifications are temporarily disabled after Firebase removal.
-// Can be re-enabled with Web Push or another provider later.
+// Push notifications are temporarily disabled.
+// Can be enabled with Web Push or another provider later.
 
 export interface PushNotificationData {
   title: string;

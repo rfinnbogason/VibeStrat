@@ -93,10 +93,8 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// JWT authentication middleware (replaces Firebase token verification)
+// JWT authentication middleware
 const isAuthenticatedUnified: RequestHandler = authenticateJwt as RequestHandler;
-
-// Migration routes removed - Firebase migration no longer needed
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
@@ -4381,8 +4379,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to convert repair request to maintenance project" });
     }
   });
-
-  // Migration routes removed - Firebase no longer used
 
   // User Settings Management Endpoints
   

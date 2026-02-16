@@ -100,7 +100,7 @@ export default function Meetings() {
     }
   }, [location, rawMeetings]);
 
-  // Filter out the specific old meeting that doesn't exist in Firebase
+  // Filter out the specific old meeting that doesn't exist in the database
   const meetings = rawMeetings.filter(meeting => meeting.id !== 'NYMz1ZhyBdpqrMk7Ipep');
 
   // Fetch strata users for invitees selection
