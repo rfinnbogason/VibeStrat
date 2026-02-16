@@ -4038,14 +4038,14 @@ var init_pdf_generator = __esm({
   }
 });
 
-// api/_index.src.ts
-var index_src_exports = {};
-__export(index_src_exports, {
+// server/api-entry.ts
+var api_entry_exports = {};
+__export(api_entry_exports, {
   default: () => handler
 });
-module.exports = __toCommonJS(index_src_exports);
-var import_express2 = __toESM(require("express"));
-var import_cors = __toESM(require("cors"));
+module.exports = __toCommonJS(api_entry_exports);
+var import_express2 = __toESM(require("express"), 1);
+var import_cors = __toESM(require("cors"), 1);
 
 // server/routes.ts
 var import_http = require("http");
@@ -8666,7 +8666,7 @@ Original notes: ${repairRequest.additionalNotes}` : ""),
   return httpServer;
 }
 
-// api/_index.src.ts
+// server/api-entry.ts
 var app = (0, import_express2.default)();
 var allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : ["http://localhost:5000", "http://localhost:3000"];
 app.use((0, import_cors.default)({
