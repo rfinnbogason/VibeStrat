@@ -8668,6 +8668,7 @@ Original notes: ${repairRequest.additionalNotes}` : ""),
 
 // server/api-entry.ts
 var app = (0, import_express2.default)();
+app.set("trust proxy", 1);
 var allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : ["http://localhost:5000", "http://localhost:3000"];
 app.use((0, import_cors.default)({
   origin: (origin, callback) => {

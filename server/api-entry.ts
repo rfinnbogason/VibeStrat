@@ -5,6 +5,9 @@ import type { Request, Response, NextFunction } from "express";
 
 const app = express();
 
+// Trust proxy (Vercel runs behind a reverse proxy)
+app.set('trust proxy', 1);
+
 // CORS configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
